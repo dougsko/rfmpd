@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+
+description="RFMP Daemon"
+command="/usr/bin/rfmpd"
+command_args="-c /etc/rfmpd/config.yaml"
+command_user="rfmpd:rfmpd"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/rfmpd/rfmpd.log"
+error_log="/var/log/rfmpd/rfmpd.log"
+
+depend() {
+	need net
+}
+
+start_pre() {
+	mkdir -p /var/lib/rfmpd /var/log/rfmpd
+	chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
+}
