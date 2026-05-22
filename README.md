@@ -1,4 +1,4 @@
-# RFMP Daemon (Go)
+# RFMP Daemon
 
 RF Microblog Protocol (RFMP) v0.5 daemon for packet radio networks.
 
