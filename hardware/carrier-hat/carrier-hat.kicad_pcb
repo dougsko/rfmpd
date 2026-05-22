@@ -1,0 +1,89 @@
+(kicad_pcb
+  (version 20240108)
+  (generator "pcbnew")
+  (generator_version "8.0")
+  (general
+    (thickness 1.6)
+    (legacy_teardrops no)
+  )
+  (paper "A4")
+  (title_block
+    (title "RFMP Pager Carrier HAT")
+    (date "2026-05-19")
+    (rev "1.0")
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (36 "B.SilkS" user "B.Silkscreen")
+    (37 "F.SilkS" user "F.Silkscreen")
+    (38 "B.Mask" user "B.Mask")
+    (39 "F.Mask" user "F.Mask")
+    (44 "Edge.Cuts" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0.05)
+    (allow_soldermask_bridges_in_footprints no)
+    (pcbplotparams
+      (layerselection 0x00010fc_ffffffff)
+      (plot_on_all_layers_selection 0x0000000_00000000)
+    )
+  )
+  (net 0 "")
+  (net 1 "3V3")
+  (net 2 "GND")
+  (net 3 "SPI0_MOSI")
+  (net 4 "SPI0_SCLK")
+  (net 5 "SPI0_CE0")
+  (net 6 "I2C1_SDA")
+  (net 7 "I2C1_SCL")
+  (net 8 "GPIO_DC")
+  (net 9 "GPIO_RST")
+  (net 10 "GPIO_INT")
+  (net 11 "GPIO_LED")
+
+  ;; Board outline: 65mm x 30mm (matches OPi Zero 2W footprint)
+  (gr_line (start 0 0) (end 65 0) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start 65 0) (end 65 30) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start 65 30) (end 0 30) (layer "Edge.Cuts") (width 0.15))
+  (gr_line (start 0 30) (end 0 0) (layer "Edge.Cuts") (width 0.15))
+
+  ;; Mounting holes (match OPi Zero 2W: 58mm x 23mm spacing)
+  (footprint "MountingHole:MountingHole_2.7mm_M2.5"
+    (at 3.5 3.5)
+    (layer "F.Cu")
+    (uuid "m1")
+    (pad "" np_thru_hole circle (at 0 0) (size 2.7 2.7) (drill 2.7) (layers "*.Cu" "*.Mask"))
+  )
+  (footprint "MountingHole:MountingHole_2.7mm_M2.5"
+    (at 61.5 3.5)
+    (layer "F.Cu")
+    (uuid "m2")
+    (pad "" np_thru_hole circle (at 0 0) (size 2.7 2.7) (drill 2.7) (layers "*.Cu" "*.Mask"))
+  )
+  (footprint "MountingHole:MountingHole_2.7mm_M2.5"
+    (at 3.5 26.5)
+    (layer "F.Cu")
+    (uuid "m3")
+    (pad "" np_thru_hole circle (at 0 0) (size 2.7 2.7) (drill 2.7) (layers "*.Cu" "*.Mask"))
+  )
+  (footprint "MountingHole:MountingHole_2.7mm_M2.5"
+    (at 61.5 26.5)
+    (layer "F.Cu")
+    (uuid "m4")
+    (pad "" np_thru_hole circle (at 0 0) (size 2.7 2.7) (drill 2.7) (layers "*.Cu" "*.Mask"))
+  )
+
+  ;; Silkscreen labels
+  (gr_text "RFMP Carrier HAT v1.0" (at 32.5 2) (layer "F.SilkS") (effects (font (size 1.5 1.5) (thickness 0.15))))
+  (gr_text "J2: DISPLAY" (at 56 10) (layer "F.SilkS") (effects (font (size 1.0 1.0) (thickness 0.12))))
+  (gr_text "J3: KEYBOARD" (at 56 17) (layer "F.SilkS") (effects (font (size 1.0 1.0) (thickness 0.12))))
+  (gr_text "D1" (at 8 24) (layer "F.SilkS") (effects (font (size 0.8 0.8) (thickness 0.1))))
+  (gr_text "R1 220R" (at 8 20) (layer "F.SilkS") (effects (font (size 0.8 0.8) (thickness 0.1))))
+
+  ;; Note: Footprint placement is approximate.
+  ;; The 2x20 header (J1) is centered at the same position as on the OPi.
+  ;; JST-XH connectors are along the right edge for cable routing to the lid.
+  ;; LED + resistor are near the left edge (visible through enclosure if desired).
+  ;; Actual routing to be completed in KiCad interactive editor.
+)

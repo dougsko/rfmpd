@@ -1,0 +1,20 @@
+#!/bin/sh
+adduser -S -D -H -h /var/lib/rfmpd -s /sbin/nologin -G rfmpd rfmpd 2>/dev/null || true
+addgroup rfmpd audio 2>/dev/null || true
+addgroup rfmpd dialout 2>/dev/null || true
+addgroup rfmpd plugdev 2>/dev/null || true
+
+mkdir -p /var/lib/rfmpd /var/log/rfmpd
+chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
+
+# Create symlinks for per-device direwolf instances
+ln -sf /etc/init.d/direwolf /etc/init.d/direwolf.digirig
+ln -sf /etc/init.d/direwolf /etc/init.d/direwolf.digiriglite
+ln -sf /etc/init.d/direwolf /etc/init.d/direwolf.qmx
+
+rc-update add rfmpd default 2>/dev/null || true
+
+# Enable SPI/I2C overlays for display hardware
+if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then
+    . /usr/share/rfmpd/enable-overlays.sh
+fi

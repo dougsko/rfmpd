@@ -1,0 +1,1021 @@
+
+RFMP Working Group                                       D. Prostko
+Request for Comments: 1                                    May 2026
+Category: Informational
+
+
+        RF Microblog Protocol (RFMP) Specification
+
+                       Version 0.4
+
+Status of This Memo
+
+   This memo provides information for the amateur radio packet
+   community.  It does not specify an Internet standard of any
+   kind.  Distribution of this memo is unlimited.
+
+Abstract
+
+   This document specifies the RF Microblog Protocol (RFMP), a
+   decentralized, append-only messaging protocol designed for
+   half-duplex packet radio networks.  RFMP enables resilient
+   mesh-style message propagation over AX.25 UI frames using
+   Protocol Buffers binary encoding and store-and-forward
+   synchronization.  The protocol operates over 1200 baud VHF
+   and 300 baud HF links via KISS-framed connections to a
+   Terminal Node Controller (TNC).
+
+Table of Contents
+
+   1.  Introduction .........................................  2
+   2.  Terminology ..........................................  3
+   3.  Protocol Stack .......................................  4
+   4.  Frame Wire Format ....................................  5
+       4.1.  General Structure ..............................  5
+       4.2.  MSG Frame ......................................  6
+       4.3.  FRAG Frame .....................................  8
+       4.4.  SVEC Frame .....................................  9
+   5.  Message Identifiers .................................. 10
+   6.  Timestamps ........................................... 12
+   7.  Sequence Numbers ..................................... 13
+   8.  Fragmentation and Reassembly ......................... 14
+       8.1.  Fragmentation Algorithm ........................ 14
+       8.2.  Reassembly Algorithm ........................... 15
+   9.  Synchronization (SVEC Protocol) ...................... 17
+       9.1.  State Vector ................................... 17
+       9.2.  Sync Algorithm ................................. 18
+       9.3.  Echo Prevention ................................ 19
+   10. Transmission Timing .................................. 20
+   11. AX.25 Framing ........................................ 21
+       11.1. Address Encoding ............................... 21
+       11.2. UI Frame Structure ............................. 23
+   12. KISS Framing ......................................... 24
+       12.1. Special Bytes .................................. 24
+       12.2. Byte Stuffing .................................. 25
+       12.3. Frame Structure ................................ 26
+   13. Deduplication ........................................ 27
+   14. Wire Size Budget ..................................... 28
+   15. Security Considerations .............................. 29
+   16. Conformance .......................................... 30
+   17. References ........................................... 31
+   Authors' Address ......................................... 31
+
+1.  Introduction
+
+   Amateur packet radio networks present a distinctive set of
+   constraints for messaging protocols:
+
+     - Low bandwidth: 1200 baud on VHF, 300 baud on HF
+     - Half-duplex shared medium with carrier-sense access
+     - Intermittent connectivity between nodes
+     - Heterogeneous participation (nodes join and leave)
+     - Regulatory prohibition of encryption (in most cases)
+
+   Existing protocols such as APRS provide position reporting
+   and short messaging but lack persistent message storage,
+   channel-based organization, and store-and-forward
+   synchronization semantics.
+
+   RFMP addresses these gaps with an append-only message store
+   that propagates via periodic state vector exchange.  Each
+   node maintains a complete copy of all messages it has
+   received and uses sequence-number-based synchronization to
+   fill gaps when communicating with peers.
+
+   Design goals:
+
+     (a) Minimize airtime consumption through efficient binary
+         encoding (Protocol Buffers).
+
+     (b) Tolerate arbitrary network partitions and heal
+         automatically when connectivity is restored.
+
+     (c) Require no central coordinator or infrastructure.
+
+     (d) Support both short-range VHF (1200 baud) and
+         long-range HF (300 baud) operation.
+
+   This document specifies RFMP version 0.4, which replaced the
+   text-based wire format of version 0.3 with Protocol Buffers
+   binary encoding, yielding 30-50% airtime savings.
+
+2.  Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
+   "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY",
+   and "OPTIONAL" in this document are to be interpreted as
+   described in RFC 2119 [RFC2119].
+
+   node
+      An implementation of the RFMP protocol, identified by a
+      unique amateur radio callsign and optional SSID.
+
+   callsign
+      An amateur radio station identifier consisting of 1-6
+      alphanumeric characters (e.g., "N0CALL").  When combined
+      with an SSID, written as "N0CALL-1".
+
+   SSID
+      Secondary Station Identifier.  An integer 0-15 appended
+      to a callsign to distinguish multiple stations operated
+      by the same licensee.
+
+   TNC
+      Terminal Node Controller.  Software (e.g., Direwolf) or
+      hardware that modulates and demodulates packet radio
+      signals, presenting a KISS interface to the host.
+
+   KISS
+      Keep It Simple, Stupid.  A host-to-TNC serial protocol
+      defined by Chepponis and Karn [KISS].
+
+   AX.25
+      Amateur X.25.  The link-layer protocol used for packet
+      radio communication [AX25].
+
+   UI frame
+      Unnumbered Information frame.  A connectionless AX.25
+      frame type used for broadcasts.
+
+   protobuf
+      Protocol Buffers version 3 binary encoding format, as
+      defined by Google [PROTOBUF].
+
+   frame
+      A single RFMP protocol data unit, encoded as a protobuf
+      Frame message.
+
+   seq
+      Per-node monotonically increasing sequence number,
+      assigned to each outgoing message.
+
+   SVEC
+      State Vector.  A broadcast containing each node's
+      highest known contiguous sequence number, used for
+      synchronization.
+
+   FEC
+      Forward Error Correction.  Specifically FX.25, which
+      adds Reed-Solomon parity to AX.25 frames.
+
+3.  Protocol Stack
+
+   The RFMP protocol stack consists of three layers:
+
+      +----------------------------------------------+
+      | RFMP Payload (Protocol Buffers binary frame) |
+      +----------------------------------------------+
+      | AX.25 UI Frame (Info field carries payload)  |
+      +----------------------------------------------+
+      | KISS Framing (TCP or serial link to TNC)     |
+      +----------------------------------------------+
+
+   An RFMP payload is placed in the Info field of an AX.25 UI
+   frame.  That AX.25 frame is then wrapped in KISS framing
+   for delivery to the TNC over a TCP socket or serial port.
+
+   The TNC (typically Direwolf software TNC) handles the
+   physical layer: audio modulation/demodulation, carrier
+   sense, PTT control, and optionally FX.25 forward error
+   correction.
+
+   Each layer is specified independently in this document to
+   allow reimplementation without reference to a particular
+   software stack.
+
+4.  Frame Wire Format
+
+4.1.  General Structure
+
+   Every RFMP frame is a Protocol Buffers v3 binary-encoded
+   message using the following schema:
+
+      message Frame {
+        oneof payload {
+          Msg  msg  = 1;
+          Frag frag = 2;
+          Svec svec = 3;
+        }
+      }
+
+   The protobuf oneof discriminator (field tags 1, 2, or 3)
+   identifies the frame type.  No additional magic bytes or
+   version prefix are used.  A conforming implementation MUST
+   accept any valid Frame message and dispatch on the oneof
+   field present.
+
+   A Frame with no oneof field set is invalid and MUST be
+   silently discarded.
+
+4.2.  MSG Frame
+
+   The MSG frame carries a complete message:
+
+      message Msg {
+        bytes  id        = 1;
+        string from_node = 2;
+        uint32 timestamp = 3;
+        string channel   = 4;
+        bytes  reply_to  = 5;
+        string body      = 6;
+        uint32 seq       = 7;
+        string author    = 8;
+      }
+
+   Field descriptions:
+
+      id (field 1)
+         REQUIRED.  Exactly 6 bytes.  The message identifier,
+         derived as specified in Section 5.  An implementation
+         MUST reject messages where len(id) != 6.
+
+      from_node (field 2)
+         REQUIRED.  The callsign (with optional SSID) of the
+         originating node.  This identifies the radio station
+         that first transmitted the message.
+
+      timestamp (field 3)
+         REQUIRED.  Unix epoch seconds (UTC) at which the
+         message was created.  See Section 6.
+
+      channel (field 4)
+         REQUIRED.  The channel name.  MUST consist only of
+         ASCII lowercase letters, digits, hyphens, and
+         underscores.  MUST match the pattern:
+         [a-z0-9_-]{1,20}.
+
+      reply_to (field 5)
+         OPTIONAL.  If present, MUST be exactly 6 bytes,
+         representing the message ID being replied to.  If
+         empty (zero-length), the message is not a reply.
+
+      body (field 6)
+         REQUIRED.  UTF-8 encoded message text.  Maximum
+         length is implementation-defined; the reference
+         implementation permits up to 10,000 bytes.
+
+      seq (field 7)
+         OPTIONAL.  Per-node sequence number.  A value of 0
+         means "not set" (protobuf default).  When set, MUST
+         be >= 1.  See Section 7.
+
+      author (field 8)
+         OPTIONAL.  A human-readable display name for the
+         message author, distinct from the from_node callsign.
+         Implementations MUST accept frames with or without
+         this field.
+
+   Example wire encoding (46 bytes, hex):
+
+      0a2c0a06e2620ca6cffd12064e3043414c4c18c0bc94
+      ad06220767656e6572616c320b48656c6c6f20776f72
+      6c64
+
+   This encodes:
+      id:        e2620ca6cffd
+      from_node: N0CALL
+      timestamp: 1705320000 (2024-01-15T12:00:00Z)
+      channel:   general
+      body:      Hello world
+
+4.3.  FRAG Frame
+
+   The FRAG frame carries one fragment of a larger message:
+
+      message Frag {
+        bytes  msg_id = 1;
+        uint32 idx    = 2;
+        uint32 total  = 3;
+        bytes  data   = 4;
+      }
+
+   Field descriptions:
+
+      msg_id (field 1)
+         REQUIRED.  Exactly 6 bytes.  The message ID of the
+         complete message being fragmented.
+
+      idx (field 2)
+         REQUIRED.  Zero-based fragment index.  MUST satisfy
+         0 <= idx < total.
+
+      total (field 3)
+         REQUIRED.  Total number of fragments.  MUST be > 0
+         and MUST NOT exceed 255.
+
+      data (field 4)
+         REQUIRED.  Raw bytes of the serialized Msg protobuf,
+         representing this fragment's portion of the encoded
+         message.  This is NOT base64-encoded; it contains
+         the literal protobuf bytes.
+
+   All FRAG frames for the same message MUST carry identical
+   msg_id and total values.  A receiver MUST reject fragments
+   where total does not match a previously received fragment
+   for the same msg_id.
+
+4.4.  SVEC Frame
+
+   The SVEC frame broadcasts a node's synchronization state:
+
+      message Svec {
+        string              from_node = 1;
+        map<string, uint32> vector    = 2;
+      }
+
+   Field descriptions:
+
+      from_node (field 1)
+         REQUIRED.  The callsign of the node broadcasting
+         this state vector.
+
+      vector (field 2)
+         REQUIRED (may be empty).  A map from callsign to
+         the highest contiguous sequence number known by
+         the broadcasting node for that callsign's messages.
+
+   Example wire encoding (44 bytes, hex):
+
+      1a2a0a064e3043414c4c12080a04573141571007120a
+      0a064b44324142431003120a0a064e3043414c4c100c
+
+   This encodes:
+      from_node: N0CALL
+      vector:    {KD2ABC: 3, N0CALL: 12, W1AW: 7}
+
+   Note: The protobuf map encoding does not guarantee field
+   ordering.  Implementations MUST NOT depend on any
+   particular key order in the serialized vector.
+
+5.  Message Identifiers
+
+   Each message is identified by a 6-byte (48-bit) identifier
+   derived deterministically from the message content.
+
+5.1.  Generation Algorithm
+
+   The message ID is computed as follows:
+
+      input = from_node (UTF-8 bytes)
+            + timestamp (4 bytes, big-endian uint32)
+            + body (UTF-8 bytes)
+
+      hash  = SHA-256(input)
+      id    = hash[0:6]
+
+   In pseudocode:
+
+      h = new SHA-256 context
+      h.update(encode_utf8(from_node))
+      h.update(big_endian_uint32(timestamp))
+      h.update(encode_utf8(body))
+      id = h.finalize()[0:6]
+
+   The input fields are concatenated without delimiters; the
+   fixed-width timestamp field (4 bytes) provides unambiguous
+   parsing of the hash input.
+
+5.2.  Display Format
+
+   When displayed to users or in API responses, the 6-byte ID
+   MUST be rendered as 12 lowercase hexadecimal characters:
+
+      Example: e2620ca6cffd
+
+5.3.  Collision Resistance
+
+   With 48 bits of hash output, the probability of a collision
+   reaches 50% at approximately 2^24 (16.7 million) messages.
+   In the low-volume packet radio environment (typically
+   hundreds to thousands of messages per day across a network),
+   this provides adequate collision resistance.
+
+   The deterministic derivation ensures that retransmissions of
+   the same message produce the same ID, enabling automatic
+   deduplication (Section 13).
+
+5.4.  Test Vectors
+
+   Vector 1:
+      from_node: "N0CALL"
+      timestamp: 1705320000
+      body:      "Hello world"
+      id:        e2620ca6cffd
+
+   Vector 2:
+      from_node: "Doug"
+      timestamp: 1705320000
+      body:      "Hello world"
+      id:        7280762dd90f
+
+   Vector 3:
+      from_node: "N0CALL"
+      timestamp: 1705320000
+      body:      "" (empty)
+      id:        97cb420daaa4
+
+6.  Timestamps
+
+6.1.  Wire Format
+
+   Timestamps are encoded as uint32 values representing Unix
+   epoch seconds (seconds since 1970-01-01T00:00:00Z).
+
+   Valid range: 0 to 4,294,967,295 (year 2106).
+
+   All timestamps MUST be in UTC.  Implementations MUST NOT
+   transmit local-time timestamps.
+
+6.2.  Display Format
+
+   For API responses and human display, timestamps SHOULD be
+   formatted as ISO 8601 compact UTC:
+
+      YYYYMMDDTHHMMSSZ
+
+   Examples:
+      20240115T120000Z    (January 15, 2024, noon UTC)
+      20260519T143022Z    (May 19, 2026, 14:30:22 UTC)
+
+   The conversion between wire format (uint32 epoch) and
+   display format occurs at the protocol boundary.  The wire
+   format is authoritative.
+
+7.  Sequence Numbers
+
+   Each node maintains a monotonically increasing counter for
+   its own outgoing messages.
+
+7.1.  Assignment
+
+   When a node creates a new message, it MUST assign:
+
+      seq = MAX(existing seq for this node) + 1
+
+   The first message from a node receives seq = 1.
+
+7.2.  Wire Encoding
+
+   The seq field is a uint32.  A value of 0 means "not set"
+   (the protobuf default for uint32).  Implementations MUST
+   treat seq = 0 as "no sequence number assigned."
+
+7.3.  Contiguous Sequences
+
+   For synchronization purposes (Section 9), the "highest
+   contiguous sequence number" for a node is defined as the
+   largest N such that messages with seq = 1, 2, ..., N are
+   all present in the local store.
+
+   Gaps in the sequence (e.g., having seq 1, 2, 4 but not 3)
+   mean the contiguous value is 2, even though seq 4 exists.
+
+8.  Fragmentation and Reassembly
+
+   Messages whose serialized protobuf representation exceeds
+   the fragment threshold MUST be fragmented before
+   transmission.
+
+8.1.  Fragmentation Algorithm
+
+   Parameters:
+      threshold = 200 bytes (configurable, RECOMMENDED default)
+      overhead  = 15 bytes (protobuf FRAG field overhead)
+
+   The fragment size is:
+
+      fragment_size = threshold - overhead
+                    = 200 - 15
+                    = 185 bytes
+
+   Procedure:
+
+   1. Serialize the Msg to protobuf bytes (raw Msg encoding,
+      NOT wrapped in a Frame envelope).
+
+   2. If len(serialized) <= threshold, transmit the message
+      as a single MSG frame wrapped in Frame{msg: ...}.
+      Stop here.
+
+   3. Compute total fragments:
+
+         total = ceil(len(serialized) / fragment_size)
+
+      If total > 255, the message is too large to fragment.
+      Implementations SHOULD reject such messages at the API
+      level.
+
+   4. For i = 0 to total - 1:
+
+         start = i * fragment_size
+         end   = min(start + fragment_size, len(serialized))
+         chunk = serialized[start:end]
+
+      Create a FRAG frame:
+         msg_id = message ID (6 bytes)
+         idx    = i
+         total  = total fragments
+         data   = chunk
+
+   5. Wrap each FRAG in Frame{frag: ...} and transmit
+      sequentially with inter-fragment timing delays
+      (Section 10).
+
+8.2.  Reassembly Algorithm
+
+   On receiving a FRAG frame:
+
+   1. Look up a fragment collector keyed by msg_id.  If none
+      exists, create one with:
+         - expected total from the frag.total field
+         - creation timestamp = now
+
+   2. Validate: if frag.total != collector.expected_total,
+      discard the fragment (inconsistent total count).
+
+   3. Validate: if a fragment with this idx has already been
+      received for this msg_id, discard (duplicate).
+
+   4. Store the fragment's data indexed by idx.
+
+   5. If all fragments are now present (count == total):
+
+      a. Concatenate data in index order: data[0] + data[1]
+         + ... + data[total-1].
+
+      b. Unmarshal the concatenated bytes as a Msg protobuf
+         message.
+
+      c. If unmarshaling fails, discard the entire collector.
+
+      d. If successful, process the reassembled Msg as if it
+         were received as a complete MSG frame.  Delete the
+         collector.
+
+   6. Collectors that have not completed within 5 minutes of
+      creation MUST be discarded.  This timeout prevents
+      unbounded memory growth from lost fragments.
+
+9.  Synchronization (SVEC Protocol)
+
+   RFMP nodes synchronize their message stores through
+   periodic broadcast of state vectors, enabling
+   store-and-forward propagation without a central server.
+
+9.1.  State Vector
+
+   A state vector is a mapping from node callsign to the
+   highest contiguous sequence number known for that node:
+
+      vector = {
+        "N0CALL": 12,
+        "KD2ABC": 3,
+        "W1AW":   7
+      }
+
+   This vector represents the broadcasting node's current
+   knowledge: "I have all messages from N0CALL through seq
+   12, all from KD2ABC through seq 3, and all from W1AW
+   through seq 7."
+
+9.2.  Sync Algorithm
+
+   Nodes SHOULD broadcast an SVEC frame at a configurable
+   interval (RECOMMENDED default: 60 seconds).
+
+   On receiving an SVEC frame from a remote node:
+
+   1. Compute the union of all callsigns present in either
+      the local vector or the remote vector.
+
+   2. For each callsign C in the union:
+
+      a. Let local_seq = local highest contiguous seq for C
+         (0 if unknown).
+
+      b. Let remote_seq = value from the received SVEC for C
+         (0 if absent from the remote vector).
+
+      c. If local_seq > remote_seq:
+         The remote node is missing messages from C.
+         Fetch all local messages from C where
+         seq > remote_seq, and queue them for transmission.
+
+   3. An SVEC with an empty vector map indicates the remote
+      node has no messages at all.  In this case, the
+      receiving node SHOULD push all known messages.
+
+   Messages queued for synchronization SHOULD be transmitted
+   with rebroadcast timing delays (Section 10) to avoid
+   channel congestion.
+
+9.3.  Echo Prevention
+
+   When processing an SVEC from node X, an implementation
+   MUST NOT queue messages whose from_node equals X.
+
+   Rationale: Node X originated those messages and therefore
+   already has them.  Sending them back would waste airtime
+   and could create feedback loops.
+
+10.  Transmission Timing
+
+   RFMP operates on a shared, half-duplex radio channel.  To
+   reduce collisions and distribute channel access fairly,
+   implementations MUST apply randomized delays before
+   transmission.
+
+10.1.  Delay Parameters
+
+      base_delay: Base transmission delay in seconds.
+                  RECOMMENDED default: 0.2 seconds.
+
+      jitter:     Random range added to base delay.
+                  RECOMMENDED default: 0.4 seconds.
+
+10.2.  Delay Calculations
+
+   Standard transmission delay:
+
+      delay = base_delay + random(0, jitter)
+
+   Sync (SVEC) broadcast delay:
+
+      delay = base_delay + random(0, jitter)
+            + random(0, 2.0)
+
+   Inter-fragment delay (for idx > 0):
+
+      delay = 0.05 + random(0, 0.05)
+
+   The first fragment (idx = 0) uses the standard
+   transmission delay.  Subsequent fragments use the shorter
+   inter-fragment delay to minimize reassembly time while
+   still yielding the channel briefly.
+
+   Rebroadcast delay (for sync-triggered retransmissions):
+
+      delay = base_delay + random(0, jitter)
+            + 1.0 + random(0, 2.0)
+
+   The additional 1-3 seconds for rebroadcasts ensures that
+   original transmissions take priority over sync fill-in
+   traffic.
+
+11.  AX.25 Framing
+
+   RFMP frames are carried in the Info field of AX.25
+   Unnumbered Information (UI) frames.
+
+11.1.  Address Encoding
+
+   Each AX.25 address occupies 7 bytes:
+
+      +--------+--------+--------+--------+--------+--------+--------+
+      | Call 0 | Call 1 | Call 2 | Call 3 | Call 4 | Call 5 |  SSID  |
+      +--------+--------+--------+--------+--------+--------+--------+
+        Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6
+
+   Callsign bytes (0-5):
+
+      - The callsign is right-padded with ASCII spaces (0x20)
+        to exactly 6 characters.
+      - Each character is left-shifted by 1 bit:
+           encoded_byte = character << 1
+
+   SSID byte (byte 6):
+
+      +---+---+---+---+---+---+---+---+
+      | 0 | 1 | 1 | S | S | S | S | E |
+      +---+---+---+---+---+---+---+---+
+       b7  b6  b5  b4  b3  b2  b1  b0
+
+      Bits 7:    Reserved, set to 0
+      Bits 6-5:  Reserved, set to 1 (value 0x60)
+      Bits 4-1:  SSID value (0-15), shifted left by 1
+      Bit 0:     Address extension bit
+                 1 = this is the last address field
+                 0 = more address fields follow
+
+   Formula:  ssid_byte = 0x60 | (ssid << 1) | extension_bit
+
+   Test vectors:
+
+      "N0CALL" SSID 0, last:
+         N=0x4E  0=0x30  C=0x43  A=0x41  L=0x4C  L=0x4C
+         Shifted: 9C 60 86 82 98 98  SSID: 0x61
+         Wire: 9c 60 86 9c 8c 8c 61
+
+      "W1AW" SSID 0, not last:
+         W=0x57  1=0x31  A=0x41  W=0x57  SP=0x20  SP=0x20
+         Shifted: AE 62 82 AE 40 40  SSID: 0x60
+         Wire: ae 62 82 8e 40 40 60
+
+      "N0CALL" SSID 1, last:
+         Same callsign shifted bytes.  SSID: 0x63
+         Wire: 9c 60 86 9c 8c 8c 63
+
+11.2.  UI Frame Structure
+
+   An AX.25 UI frame is structured as:
+
+      +-----------+-----------+------------+---------+-----+------+
+      |   Dest    |  Source   | Digipeaters| Control | PID | Info |
+      | (7 bytes) | (7 bytes) | (N*7 bytes)|  (1)    | (1) | (N)  |
+      +-----------+-----------+------------+---------+-----+------+
+
+   Fields:
+
+      Destination:  7 bytes.  For RFMP, the destination
+                    callsign is "RFMP" with SSID 0.
+
+      Source:       7 bytes.  The transmitting node's
+                    callsign and SSID.
+
+      Digipeaters:  0 or more 7-byte addresses for
+                    digipeater path.  Typically empty for
+                    RFMP (direct node-to-node communication).
+
+      Control:      0x03 (UI frame, unnumbered).
+
+      PID:          0xF0 (No Layer 3 protocol).
+
+      Info:         The RFMP payload (protobuf-encoded Frame).
+
+   The last address field in the address block (source, or
+   the final digipeater if present) MUST have its extension
+   bit (bit 0 of the SSID byte) set to 1.
+
+   Minimum frame size (no digipeaters, empty info):
+      7 + 7 + 1 + 1 = 16 bytes
+
+12.  KISS Framing
+
+   The KISS protocol provides a simple framing mechanism for
+   host-to-TNC communication over serial or TCP links.
+
+12.1.  Special Bytes
+
+      +-------+------+-----------------------------------+
+      | Name  | Hex  | Purpose                           |
+      +-------+------+-----------------------------------+
+      | FEND  | 0xC0 | Frame delimiter (start and end)   |
+      | FESC  | 0xDB | Escape character prefix           |
+      | TFEND | 0xDC | Escaped form of FEND              |
+      | TFESC | 0xDD | Escaped form of FESC              |
+      +-------+------+-----------------------------------+
+
+12.2.  Byte Stuffing
+
+   FEND and FESC bytes within the frame content (command byte
+   and payload) MUST be escaped to avoid confusion with frame
+   delimiters:
+
+   Encoding:
+
+      +------------+------------------+
+      | Input byte | Output sequence  |
+      +------------+------------------+
+      |    0xC0    |   0xDB  0xDC     |
+      |    0xDB    |   0xDB  0xDD     |
+      |   other    |   unchanged      |
+      +------------+------------------+
+
+   Decoding:
+
+      +------------------+---------------+
+      | Input sequence   | Output byte   |
+      +------------------+---------------+
+      |   0xDB  0xDC     |     0xC0      |
+      |   0xDB  0xDD     |     0xDB      |
+      |   0xDB  other    |   INVALID     |
+      |   0xDB  (end)    |   INVALID     |
+      +------------------+---------------+
+
+   Invalid escape sequences MUST cause the entire frame to
+   be discarded.
+
+   Test vectors:
+
+      Raw:     00 C0
+      Stuffed: 00 DB DC
+
+      Raw:     00 DB
+      Stuffed: 00 DB DD
+
+      Raw:     00 C0 DB C0
+      Stuffed: 00 DB DC DB DD DB DC
+
+12.3.  Frame Structure
+
+   A KISS frame on the wire:
+
+      +------+----------+------------------+------+
+      | FEND | Cmd Byte | Stuffed Payload  | FEND |
+      | 0xC0 |          |                  | 0xC0 |
+      +------+----------+------------------+------+
+
+   Command byte:
+
+      cmd_byte = (port << 4) | command_code
+
+   Where port is the TNC port number (0 for single-port
+   TNCs) and command_code identifies the operation:
+
+      +---------------+------+------------------------------+
+      | Command       | Code | Description                  |
+      +---------------+------+------------------------------+
+      | DATA_FRAME    | 0x00 | AX.25 frame data             |
+      | TX_DELAY      | 0x01 | Transmitter keyup delay      |
+      | PERSISTENCE   | 0x02 | CSMA persistence parameter   |
+      | SLOT_TIME     | 0x03 | CSMA slot time               |
+      | TX_TAIL       | 0x04 | Transmitter tail time        |
+      | FULL_DUPLEX   | 0x05 | Full/half duplex setting     |
+      | SET_HARDWARE  | 0x06 | Hardware-specific command     |
+      | RETURN        | 0x0F | Exit KISS mode               |
+      +---------------+------+------------------------------+
+
+   Only DATA_FRAME (0x00) frames carry AX.25 data.  All
+   other command codes are TNC configuration commands and
+   do not contain RFMP protocol data.
+
+   Receiving behavior:
+
+      - Buffer incoming bytes until a complete FEND-to-FEND
+        sequence is received.
+
+      - Discard leading FEND bytes (consecutive FENDs between
+        frames are permitted and carry no data).
+
+      - After unescaping, extract the command byte.  Only
+        process frames with DATA_FRAME command; silently
+        ignore all other command types.
+
+13.  Deduplication
+
+   RFMP uses a two-tier deduplication strategy to prevent
+   redundant message processing and retransmission.
+
+13.1.  Message Deduplication
+
+   Messages are deduplicated by their 6-byte id field.  Since
+   the ID is deterministically derived (Section 5), identical
+   messages always produce identical IDs regardless of which
+   node retransmits them.
+
+   A message MUST be processed (stored, forwarded) only once.
+   Subsequent receptions of a message with the same id MUST
+   be silently discarded.
+
+13.2.  Fragment Deduplication
+
+   Fragments are deduplicated by the pair (msg_id, idx).
+   Receiving the same fragment index for the same message ID
+   a second time MUST NOT alter the reassembly state.
+
+13.3.  Seen Cache
+
+   Implementations SHOULD maintain an in-memory "seen cache"
+   for fast deduplication without database queries:
+
+      - Key: 6-byte message ID
+      - TTL: 1 hour (RECOMMENDED, configurable)
+
+   The persistent message store provides ultimate dedup
+   regardless of cache state.  The cache is an optimization,
+   not a correctness requirement.
+
+   The seen cache MAY be discarded on restart; the persistent
+   store ensures no duplicate processing.
+
+14.  Wire Size Budget
+
+   Efficient use of the radio channel is a primary design
+   goal.  The following table summarizes typical frame sizes
+   and corresponding airtime at common baud rates:
+
+      +-------------------+-------+----------+----------+
+      | Frame Type        | Bytes | 1200 baud| 300 baud |
+      |                   |       | (ms)     | (ms)     |
+      +-------------------+-------+----------+----------+
+      | MSG (short body)  | 40-50 | 320-400  | 1040-1300|
+      | MSG (140 chars)   |  ~180 |  1440    |   4680   |
+      | FRAG (per frag)   |  ~200 |  1600    |   5200   |
+      | SVEC (5 nodes)    |   ~70 |   560    |   1820   |
+      +-------------------+-------+----------+----------+
+
+   Airtime formula:  airtime_ms = bytes * (8 / baud) * 1000
+
+   At 1200 baud: 8 ms per byte.
+   At 300 baud:  26.67 ms per byte.
+
+   These sizes represent 30-50% savings compared to the
+   text-based wire format used in RFMP v0.3, where field
+   names and delimiters consumed significant airtime.
+
+   Note: These calculations do not include AX.25 overhead
+   (16+ bytes) or KISS framing (2+ bytes).  The full
+   on-air frame is larger by these fixed amounts.
+
+15.  Security Considerations
+
+15.1.  No Authentication
+
+   RFMP does not authenticate message origins.  The
+   from_node field is self-asserted and trivially spoofable.
+   This is consistent with amateur radio practice where
+   callsign identification is a regulatory (not
+   cryptographic) obligation.
+
+   Implementations SHOULD NOT make security-critical
+   decisions based on the from_node field.
+
+15.2.  No Encryption
+
+   RFMP does not encrypt message content.  Amateur radio
+   regulations in most jurisdictions prohibit encryption of
+   communications.  All RFMP traffic MUST be considered
+   public.
+
+15.3.  Replay and Deduplication
+
+   The deterministic message ID (Section 5) provides
+   inherent replay resistance: a replayed message produces
+   the same ID and is deduplicated.  However, an attacker
+   could create new messages with spoofed from_node values
+   that would not be deduplicated against the originals.
+
+15.4.  Denial of Service
+
+   The protocol provides no rate limiting mechanism.  A
+   node could flood the channel with valid frames, consuming
+   all available airtime.  Mitigation is left to
+   implementations (e.g., per-node rate limits) and
+   regulatory enforcement.
+
+15.5.  Sequence Number Manipulation
+
+   A node could broadcast SVEC frames with artificially low
+   sequence numbers, causing peers to retransmit messages
+   that the attacker already has.  This amplification attack
+   wastes airtime.  Implementations MAY implement rate limits
+   on sync-triggered retransmissions.
+
+16.  Conformance
+
+   An implementation is conformant with this specification
+   if it satisfies all of the following:
+
+   1. Produces byte-identical protobuf output for all
+      encoding test vectors in test_vectors.json.
+
+   2. Correctly decodes all valid test vectors back to
+      their specified field values.
+
+   3. Correctly generates message IDs matching all
+      test vectors in the message_id section.
+
+   4. Rejects all invalid inputs listed in the validation
+      section of test_vectors.json.
+
+   5. Implements byte stuffing and unstuffing per the
+      KISS test vectors.
+
+   6. Correctly encodes AX.25 addresses per the
+      address encoding test vectors.
+
+   The test_vectors.json file accompanying this
+   specification provides machine-readable vectors for
+   automated conformance testing.
+
+17.  References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to
+              Indicate Requirement Levels", BCP 14,
+              RFC 2119, March 1997.
+
+   [AX25]     Beech, W.A., Nielsen, D.E., and J. Taylor,
+              "AX.25 Link Access Protocol for Amateur
+              Packet Radio", Version 2.2, July 1998.
+
+   [KISS]     Chepponis, M. and P. Karn, "The KISS TNC:
+              A simple Host-to-TNC communications
+              protocol", ARRL 6th Computer Networking
+              Conference, 1987.
+
+   [PROTOBUF] Google, "Protocol Buffers Language Guide
+              (proto3)", https://protobuf.dev/
+              programming-guides/proto3/
+
+   [DIREWOLF] Langner, J., "Dire Wolf - Software TNC
+              for packet radio", WB2OSZ.
+
+   [FX25]     Stenzel, A., "FX.25 Forward Error
+              Correction Extension to AX.25", 2006.
+
+Authors' Address
+
+   Doug Prostko
+
+   Email: (see repository)
+   URI:   https://github.com/dprostko/rfmp-go

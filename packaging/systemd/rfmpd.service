@@ -1,0 +1,14 @@
+[Unit]
+Description=RFMP Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=rfmpd
+Group=rfmpd
+ExecStart=/usr/bin/rfmpd -c /etc/rfmpd/config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

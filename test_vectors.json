@@ -1,0 +1,161 @@
+{
+  "_meta": {
+    "protocol": "RFMP v0.4",
+    "wire_format": "Protocol Buffers v3",
+    "generated_from": "rfmp-go reference implementation",
+    "purpose": "Conformance test vectors for reimplementation in any language",
+    "usage": "Each section contains inputs and expected outputs. An implementation is conformant if it produces matching outputs for all valid vectors and rejects all invalid vectors."
+  },
+  "wire_format": {
+    "msg_basic": {
+      "description": "Basic MSG frame with no reply and no seq",
+      "wire_hex": "0a2c0a06e2620ca6cffd12064e3043414c4c18c0bc94ad06220767656e6572616c320b48656c6c6f20776f726c64",
+      "wire_length": 46,
+      "fields": {
+        "id_hex": "e2620ca6cffd",
+        "from_node": "N0CALL",
+        "timestamp_epoch": 1705320000,
+        "timestamp_iso": "20240115T120000Z",
+        "channel": "general",
+        "reply_to": null,
+        "body": "Hello world",
+        "seq": 0
+      }
+    },
+    "msg_with_reply_and_seq": {
+      "description": "MSG frame with reply_to and seq fields",
+      "wire_hex": "0a370a06e2620ca6cffd12084e3043414c4c2d3118c0bc94ad06220767656e6572616c2a06fedcba987654320a5265706c7920686572653805",
+      "wire_length": 57,
+      "fields": {
+        "id_hex": "e2620ca6cffd",
+        "from_node": "N0CALL-1",
+        "timestamp_epoch": 1705320000,
+        "timestamp_iso": "20240115T120000Z",
+        "channel": "general",
+        "reply_to_hex": "fedcba987654",
+        "body": "Reply here",
+        "seq": 5
+      }
+    },
+    "svec_basic": {
+      "description": "SVEC frame with vector clock entries",
+      "wire_hex": "1a2a0a064e3043414c4c12080a04573141571007120a0a064b44324142431003120a0a064e3043414c4c100c",
+      "wire_length": 44,
+      "fields": {
+        "from_node": "N0CALL",
+        "vector": {
+          "KD2ABC": 3,
+          "N0CALL": 12,
+          "W1AW": 7
+        }
+      }
+    }
+  },
+  "message_id": {
+    "description": "Message ID = SHA-256(from_node + big_endian_uint32_epoch + body)[:6], displayed as 12 hex chars",
+    "vectors": [
+      {
+        "from_node": "N0CALL",
+        "timestamp_epoch": 1705320000,
+        "body": "Hello world",
+        "expected_id_hex": "e2620ca6cffd"
+      },
+      {
+        "from_node": "Doug",
+        "timestamp_epoch": 1705320000,
+        "body": "Hello world",
+        "expected_id_hex": "7280762dd90f"
+      },
+      {
+        "from_node": "N0CALL",
+        "timestamp_epoch": 1705320000,
+        "body": "",
+        "expected_id_hex": "97cb420daaa4"
+      }
+    ]
+  },
+  "fragmentation": {
+    "description": "Messages exceeding the threshold are split into FRAG frames carrying raw protobuf Msg bytes",
+    "fragment_size_formula": "threshold - 15 (protobuf FRAG overhead)",
+    "notes": [
+      "Fragments carry raw serialized Msg bytes (NOT base64)",
+      "Each FRAG is wrapped in a Frame{frag: ...} for transmission",
+      "Reassembly: concatenate data fields in idx order, unmarshal as Msg"
+    ]
+  },
+  "kiss": {
+    "byte_stuffing": {
+      "description": "KISS byte stuffing for special characters in the payload",
+      "cases": [
+        {
+          "description": "Frame containing 0xC0 (FEND)",
+          "raw_hex": "00c0",
+          "stuffed_hex": "00dbdc"
+        },
+        {
+          "description": "Frame containing 0xDB (FESC)",
+          "raw_hex": "00db",
+          "stuffed_hex": "00dbdd"
+        },
+        {
+          "description": "Frame with multiple special bytes",
+          "raw_hex": "00c0dbc0",
+          "stuffed_hex": "00dbdcdbdddbdc"
+        }
+      ]
+    }
+  },
+  "ax25": {
+    "address_encoding": {
+      "description": "AX.25 address field encoding (callsign shifted left 1, SSID byte)",
+      "cases": [
+        {
+          "callsign": "N0CALL",
+          "ssid": 0,
+          "is_last": true,
+          "encoded_hex": "9c60869c8c8c61",
+          "notes": "6 chars, SSID 0, last address"
+        },
+        {
+          "callsign": "W1AW",
+          "ssid": 0,
+          "is_last": false,
+          "encoded_hex": "ae62828ee040",
+          "notes": "4 chars space-padded, SSID 0, not last"
+        },
+        {
+          "callsign": "N0CALL",
+          "ssid": 1,
+          "is_last": true,
+          "encoded_hex": "9c60869c8c8c63",
+          "notes": "SSID 1, last address"
+        }
+      ]
+    }
+  },
+  "validation": {
+    "description": "Invalid inputs that must be rejected",
+    "cases": [
+      {
+        "name": "msg_id_wrong_length",
+        "description": "Msg with id field not exactly 6 bytes",
+        "reason": "id must be exactly 6 bytes"
+      },
+      {
+        "name": "frag_idx_out_of_range",
+        "description": "Frag with idx >= total",
+        "reason": "idx must be < total"
+      },
+      {
+        "name": "empty_payload",
+        "description": "Frame with no oneof field set",
+        "reason": "Frame must contain exactly one payload type"
+      },
+      {
+        "name": "malformed_protobuf",
+        "description": "Random bytes that don't parse as valid protobuf",
+        "reason": "proto.Unmarshal must succeed"
+      }
+    ]
+  }
+}

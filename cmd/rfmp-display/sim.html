@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>rfmp-display simulator</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: monospace;
+    color: #ccc;
+}
+canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 2px solid #555;
+    width: 640px;
+    height: 480px;
+    background: #000;
+}
+.info {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #666;
+}
+.status {
+    margin-top: 8px;
+    font-size: 11px;
+}
+.status.connected { color: #0a0; }
+.status.disconnected { color: #a00; }
+</style>
+</head>
+<body>
+<canvas id="screen" width="320" height="240"></canvas>
+<div class="info">Click here to focus, then type. Arrow keys navigate. Esc = Back.</div>
+<div class="status disconnected" id="status">Disconnected</div>
+<script>
+const canvas = document.getElementById('screen');
+const ctx = canvas.getContext('2d');
+const statusEl = document.getElementById('status');
+const W = 320, H = 240;
+const imgData = ctx.createImageData(W, H);
+let ws;
+
+function connect() {
+    ws = new WebSocket(`ws://${location.host}/ws`);
+    ws.binaryType = 'arraybuffer';
+
+    ws.onopen = () => {
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'status connected';
+    };
+
+    ws.onclose = () => {
+        statusEl.textContent = 'Disconnected — reconnecting...';
+        statusEl.className = 'status disconnected';
+        setTimeout(connect, 1000);
+    };
+
+    ws.onmessage = (event) => {
+        if (event.data instanceof ArrayBuffer) {
+            renderFrame(new Uint16Array(event.data));
+        }
+    };
+}
+
+let frameCount = 0;
+function renderFrame(rgb565) {
+    const data = imgData.data;
+    for (let i = 0; i < rgb565.length; i++) {
+        const px = rgb565[i];
+        const r = ((px >> 11) & 0x1F) * 255 / 31;
+        const g = ((px >> 5) & 0x3F) * 255 / 63;
+        const b = (px & 0x1F) * 255 / 31;
+        const j = i * 4;
+        data[j] = r | 0;
+        data[j+1] = g | 0;
+        data[j+2] = b | 0;
+        data[j+3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    frameCount++;
+    if (frameCount === 1) {
+        statusEl.textContent = 'Connected — receiving frames';
+    }
+}
+
+document.addEventListener('keydown', (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    e.preventDefault();
+    let key = e.key;
+    if (key.length === 1 || ['Enter','Escape','Backspace','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(key)) {
+        ws.send(key);
+    }
+});
+
+canvas.setAttribute('tabindex', '0');
+canvas.focus();
+
+connect();
+</script>
+</body>
+</html>

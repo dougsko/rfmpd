@@ -1,0 +1,11 @@
+dist/
+.git/
+.idea/
+.vscode/
+*.db
+*.db-shm
+*.db-wal
+rfmpd
+rf-sim
+rfmpd-linux-*
+.DS_Store

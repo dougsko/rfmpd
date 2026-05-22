@@ -1,0 +1,4 @@
+#!/bin/sh
+rm -f /etc/init.d/direwolf.digirig /etc/init.d/direwolf.digiriglite /etc/init.d/direwolf.qmx
+rm -rf /var/lib/rfmpd /var/log/rfmpd
+deluser rfmpd 2>/dev/null || true

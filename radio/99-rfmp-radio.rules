@@ -1,0 +1,17 @@
+# RFMP Radio Device Rules
+# Creates stable symlinks and starts Direwolf via systemd.
+#
+# Flow: USB plug → udev creates /dev/<symlink> → systemd starts direwolf@<name>
+#       USB unplug → device disappears → BindsTo= stops direwolf
+
+# Digirig (CP210x) — VHF
+ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", \
+    SYMLINK+="digirig", TAG+="systemd", ENV{SYSTEMD_WANTS}+="direwolf@digirig.service"
+
+# Digirig Lite (C-Media CM108) — VHF
+ACTION=="add", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0d8c", ATTRS{idProduct}=="0012", \
+    SYMLINK+="digiriglite", TAG+="systemd", ENV{SYSTEMD_WANTS}+="direwolf@digiriglite.service"
+
+# QMX (STM32 VCP) — HF
+ACTION=="add", SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a34c", \
+    SYMLINK+="qmx", TAG+="systemd", ENV{SYSTEMD_WANTS}+="direwolf@qmx.service"

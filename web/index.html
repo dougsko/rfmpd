@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>RFMP - RF Microblog</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="/static/images/favicon.svg" type="image/svg+xml">
+
+    <!-- Inline SVG icon sprite -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+        <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></symbol>
+        <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></symbol>
+        <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+        <symbol id="icon-reply" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17l-5-5 5-5"/><path d="M4 12h12a4 4 0 014 4v1"/></symbol>
+        <symbol id="icon-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M4 15h16M10 3l-2 18M16 3l-2 18"/></symbol>
+    </svg>
+</head>
+<body>
+    <!-- Username Selection Modal -->
+    <div id="usernameModal" class="modal active">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Welcome to RFMP</h2>
+                <p>Enter your amateur radio callsign to start microblogging over RF</p>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:10px; align-items:flex-start;">
+                    <div style="flex:1;">
+                        <input type="text"
+                               id="usernameInput"
+                               placeholder="Nickname (this session)"
+                               autocomplete="off"
+                               style="width:100%;">
+                        <small class="hint">Any nickname for this session (transient)</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="startBtn" class="btn btn-primary" disabled>
+                    Start Microblogging
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app" class="app-container hidden">
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <div class="header-content">
+                <button class="menu-btn" id="menuBtn"><svg class="icon"><use href="#icon-menu"/></svg></button>
+                <h1 class="app-title"><img src="/static/images/favicon.svg" class="app-logo" alt="">RFMP</h1>
+                <button class="theme-btn" id="themeBtn" title="Toggle theme">
+                    <svg class="icon" id="themeIcon"><use href="#icon-moon"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sidebar (Desktop) / Drawer (Mobile) -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><img src="/static/images/favicon.svg" class="app-logo" alt="">RFMP</h2>
+                <button class="close-sidebar" id="closeSidebar"><svg class="icon"><use href="#icon-x"/></svg></button>
+            </div>
+
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar"></div>
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-status">
+                        <span class="status-indicator" id="connectionStatus"></span>
+                        <span id="connectionText">Connecting...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Channels -->
+            <div class="channels-section">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <h3 class="section-title">Channels</h3>
+                    <button id="addChannelBtn" class="btn" title="Create channel" style="padding:6px 10px; font-size:14px;">+
+                    </button>
+                </div>
+
+                <!-- Toggled inline create row (hidden by default) -->
+                <div id="newChannelRow" style="display:none; margin:12px 0 16px;">
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <input id="newChannelInput" type="text" placeholder="channel name (nets)" maxlength="20" style="width:100%; min-width:0; text-transform:lowercase; padding:8px; border-radius:8px; border:1px solid var(--border-color);">
+                        <div style="display:flex; gap:8px; justify-content:flex-end;">
+                            <button id="createChannelBtn" class="btn btn-primary" style="font-size:13px; padding:6px 14px;">Create</button>
+                            <button id="cancelCreateBtn" class="btn" style="font-size:13px; padding:6px 14px;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="channels-list" id="channelsList">
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-section">
+                <h3 class="section-title">Network Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalMessages">0</div>
+                        <div class="stat-label">Messages</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="activeNodes">0</div>
+                        <div class="stat-label">Active Nodes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="sidebar-footer">
+                <button class="theme-btn sidebar-theme-btn" id="sidebarThemeBtn" title="Toggle theme">
+                    <svg class="icon" id="sidebarThemeIcon"><use href="#icon-moon"/></svg>
+                    <span>Toggle Theme</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Channel Header -->
+            <div class="channel-header">
+                <h2 class="channel-name">
+                    <svg class="icon icon-sm"><use href="#icon-hash"/></svg>
+                    <span id="currentChannel">general</span>
+                </h2>
+                <button class="refresh-btn" id="refreshBtn" title="Refresh"><svg class="icon"><use href="#icon-refresh"/></svg></button>
+            </div>
+
+            <!-- Compose Area -->
+            <div class="compose-area">
+                <div class="compose-box" id="composeBox">
+                    <div class="compose-reply-to hidden" id="replyToBox">
+                        <span>Replying to <span id="replyToUser"></span></span>
+                        <button class="cancel-reply" id="cancelReplyBtn"><svg class="icon icon-sm"><use href="#icon-x"/></svg></button>
+                    </div>
+                    <textarea
+                        id="messageInput"
+                        placeholder="What's happening on the airwaves?"
+                        maxlength="10000"
+                        rows="1"></textarea>
+                    <div class="compose-footer">
+                        <div class="compose-stats">
+                            <span class="char-count idle" id="charCount">0/10000</span>
+                        </div>
+                        <button class="send-btn" id="sendBtn" disabled>
+                            <svg class="icon icon-sm"><use href="#icon-send"/></svg>
+                            <span>Send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Timeline -->
+            <div class="timeline" id="timeline">
+                <div class="loading-spinner" id="loadingSpinner">
+                    <p>Loading messages...</p>
+                </div>
+                <!-- Messages will be inserted here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- JavaScript -->
+    <script>
+        window.RFMP_CONFIG = {
+            apiUrl: '',
+            wsUrl: `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/stream`
+        };
+    </script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

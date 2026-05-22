@@ -1,0 +1,16 @@
+[Unit]
+Description=Direwolf TNC (%i)
+BindsTo=dev-%i.device
+After=dev-%i.device sound.target
+
+[Service]
+Type=simple
+User=rfmpd
+Group=rfmpd
+SupplementaryGroups=audio dialout plugdev
+ExecStart=/usr/bin/direwolf -t 0 -c /etc/rfmpd/direwolf/direwolf-%i.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

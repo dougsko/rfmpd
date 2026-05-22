@@ -1,0 +1,35 @@
+# RFMP Daemon Configuration
+node:
+  callsign: "N0CALL"      # Your callsign (REQUIRED - change this!)
+  ssid: 0                 # Optional SSID modifier (0-15)
+
+network:
+  direwolf_host: "127.0.0.1"  # Direwolf TCP KISS server host
+  direwolf_port: 8001         # Direwolf TCP KISS port
+  reconnect_interval: 5       # Seconds between reconnection attempts
+  offline_mode: false         # Set to true for testing without Direwolf
+
+protocol:
+  fragment_threshold: 200     # Bytes - messages larger than this are fragmented
+
+timing:
+  base_delay: 0.2            # Base transmission delay in seconds
+  jitter: 0.4                # Random jitter range in seconds
+
+sync:
+  sync_interval: 60         # Seconds between SVEC frame broadcasts
+
+storage:
+  database_path: "/var/lib/rfmpd/messages.db"  # SQLite database location
+
+api:
+  host: "0.0.0.0"          # API bind address
+  port: 8080               # API port
+  cors_origins:            # Allowed CORS origins for web UI
+    - "http://localhost:8080"
+
+logging:
+  level: "INFO"            # Log level (DEBUG, INFO, WARNING, ERROR)
+  file: "/var/log/rfmpd/rfmpd.log"  # Log file location
+  max_size: 10485760       # Max log file size in bytes (10MB)
+  backup_count: 5          # Number of backup log files to keep

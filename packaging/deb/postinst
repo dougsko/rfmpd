@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+useradd --system --home-dir /var/lib/rfmpd --shell /usr/sbin/nologin rfmpd 2>/dev/null || true
+usermod -a -G audio,dialout,plugdev rfmpd
+
+mkdir -p /var/lib/rfmpd /var/log/rfmpd
+chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
+
+systemctl daemon-reload
+systemctl enable rfmpd
+udevadm control --reload-rules
+udevadm trigger
+
+# Enable SPI/I2C overlays for display hardware
+if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then
+    . /usr/share/rfmpd/enable-overlays.sh
+fi

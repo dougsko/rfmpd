@@ -1,0 +1,28 @@
+# Binaries
+rfmpd
+/rf-sim
+*.exe
+
+# Build output
+dist/
+coverage.out
+coverage.html
+*.deb
+*.rpm
+*.apk
+rfmpd-linux-*
+
+# Test databases
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store

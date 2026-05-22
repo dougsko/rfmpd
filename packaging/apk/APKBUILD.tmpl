@@ -1,0 +1,26 @@
+pkgname=${NAME}
+pkgver=${VERSION}
+pkgrel=1
+pkgdesc="${SUMMARY}"
+arch="${ARCH}"
+license="${LICENSE}"
+depends="${DEPENDS}"
+install="$pkgname.post-install $pkgname.pre-deinstall $pkgname.post-deinstall"
+
+package() {
+	mkdir -p "$pkgdir"/usr/bin
+	mkdir -p "$pkgdir"/etc/rfmpd/direwolf
+	mkdir -p "$pkgdir"/etc/init.d
+	mkdir -p "$pkgdir"/etc/mdev.d
+	mkdir -p "$pkgdir"/usr/share/rfmpd
+
+	install -m755 "$srcdir"/rfmpd "$pkgdir"/usr/bin/rfmpd
+	install -m644 "$srcdir"/config.yaml "$pkgdir"/etc/rfmpd/config.yaml
+	install -m644 "$srcdir"/direwolf-digirig.conf "$pkgdir"/etc/rfmpd/direwolf/
+	install -m644 "$srcdir"/direwolf-digiriglite.conf "$pkgdir"/etc/rfmpd/direwolf/
+	install -m644 "$srcdir"/direwolf-qmx.conf "$pkgdir"/etc/rfmpd/direwolf/
+	install -m755 "$srcdir"/openrc-rfmpd "$pkgdir"/etc/init.d/rfmpd
+	install -m755 "$srcdir"/openrc-direwolf "$pkgdir"/etc/init.d/direwolf
+	install -m644 "$srcdir"/rfmp-radio.conf "$pkgdir"/etc/mdev.d/rfmp-radio.conf
+	install -m755 "$srcdir"/enable-overlays.sh "$pkgdir"/usr/share/rfmpd/enable-overlays.sh
+}

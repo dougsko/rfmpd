@@ -1,0 +1,14 @@
+#!/sbin/openrc-run
+
+description="Direwolf TNC (${RC_SVCNAME#direwolf.})"
+command="/usr/bin/direwolf"
+command_args="-t 0 -c /etc/rfmpd/direwolf/direwolf-${RC_SVCNAME#direwolf.}.conf"
+command_user="rfmpd:rfmpd"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+output_log="/var/log/rfmpd/direwolf-${RC_SVCNAME#direwolf.}.log"
+error_log="/var/log/rfmpd/direwolf-${RC_SVCNAME#direwolf.}.log"
+
+depend() {
+	need net
+}

@@ -1,0 +1,331 @@
+(kicad_sch
+  (version 20230121)
+  (generator "eeschema")
+  (uuid "f47ac10b-58cc-4372-a567-0e02b2c3d479")
+  (paper "A4")
+  (title_block
+    (title "RFMP Pager Carrier HAT")
+    (date "2026-05-19")
+    (rev "1.0")
+    (comment 1 "Routes OPi Zero 2W 40-pin header to JST-XH connectors")
+  )
+
+  (lib_symbols
+  )
+
+  (wire
+    (pts (xy 73.66 38.1) (xy 109.22 38.1))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000001")
+  )
+  (wire
+    (pts (xy 73.66 43.18) (xy 109.22 43.18))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000002")
+  )
+  (wire
+    (pts (xy 73.66 48.26) (xy 109.22 48.26))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000003")
+  )
+  (wire
+    (pts (xy 73.66 53.34) (xy 109.22 53.34))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000004")
+  )
+  (wire
+    (pts (xy 73.66 58.42) (xy 109.22 58.42))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000005")
+  )
+  (wire
+    (pts (xy 73.66 63.5) (xy 109.22 63.5))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000006")
+  )
+  (wire
+    (pts (xy 73.66 68.58) (xy 109.22 68.58))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000007")
+  )
+  (wire
+    (pts (xy 73.66 73.66) (xy 109.22 73.66))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000008")
+  )
+  (wire
+    (pts (xy 73.66 78.74) (xy 109.22 78.74))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-000000000009")
+  )
+  (wire
+    (pts (xy 73.66 83.82) (xy 109.22 83.82))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-00000000000a")
+  )
+  (wire
+    (pts (xy 73.66 88.9) (xy 109.22 88.9))
+    (stroke (width 0) (type default))
+    (uuid "a0000001-0001-0001-0001-00000000000b")
+  )
+
+  (text "RFMP Pager Carrier HAT v1.0\n\nOPi Zero 2W 40-pin Header -> JST-XH Connectors\n\nJ2 DISPLAY (8-pin JST-XH):\n  1=3V3  2=GND  3=SCLK  4=MOSI  5=CE0  6=DC  7=RST  8=BLK\n  From OPi pins: 1, 6, 23, 19, 24, 18, 12, 17\n\nJ3 KEYBOARD (5-pin JST-XH):\n  1=3V3  2=GND  3=SDA  4=SCL  5=INT\n  From OPi pins: 1, 9, 3, 5, 7\n\nD1+R1: Status LED\n  GPIO5 (Pin 29) -> R1 220ohm -> D1 LED -> GND (Pin 30)\n\nC1: 100nF decoupling across 3V3/GND"
+    (at 25.4 25.4 0)
+    (effects
+      (font (size 1.27 1.27))
+      (justify left)
+    )
+    (uuid "b0000001-0001-0001-0001-000000000001")
+  )
+
+  (symbol
+    (lib_id "Connector_Generic:Conn_02x20_Odd_Even")
+    (at 55.88 68.58 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000001-0001-0001-0001-000000000001")
+    (property "Reference" "J1"
+      (at 55.88 40.64 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "OPi_Zero2W_40pin"
+      (at 55.88 96.52 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x20_P2.54mm_Vertical"
+      (at 55.88 68.58 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+  (symbol
+    (lib_id "Connector_Generic:Conn_01x08")
+    (at 121.92 53.34 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000002-0002-0002-0002-000000000002")
+    (property "Reference" "J2"
+      (at 121.92 40.64 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "DISPLAY_JST-XH_8pin"
+      (at 121.92 66.04 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Connector_JST:JST_XH_B8B-XH-A_1x08_P2.50mm_Vertical"
+      (at 121.92 53.34 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+  (symbol
+    (lib_id "Connector_Generic:Conn_01x05")
+    (at 121.92 86.36 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000003-0003-0003-0003-000000000003")
+    (property "Reference" "J3"
+      (at 121.92 78.74 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "KEYBOARD_JST-XH_5pin"
+      (at 121.92 93.98 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Connector_JST:JST_XH_B5B-XH-A_1x05_P2.50mm_Vertical"
+      (at 121.92 86.36 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+
+  (symbol
+    (lib_id "Device:R")
+    (at 152.4 134.62 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000005-0005-0005-0005-000000000005")
+    (property "Reference" "R1"
+      (at 154.94 134.62 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "220R"
+      (at 152.4 134.62 90)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Resistor_SMD:R_0805_2012Metric"
+      (at 152.4 134.62 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+  (symbol
+    (lib_id "Device:LED")
+    (at 162.56 134.62 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000006-0006-0006-0006-000000000006")
+    (property "Reference" "D1"
+      (at 162.56 129.54 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "LED_GREEN"
+      (at 162.56 139.7 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "LED_THT:LED_D3.0mm"
+      (at 162.56 134.62 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+  (symbol
+    (lib_id "Device:C")
+    (at 38.1 68.58 0)
+    (unit 1)
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board yes)
+    (dnp no)
+    (uuid "c0000007-0007-0007-0007-000000000007")
+    (property "Reference" "C1"
+      (at 40.64 68.58 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "100nF"
+      (at 38.1 73.66 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+      (at 38.1 68.58 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+  )
+
+  (label "3V3"
+    (at 73.66 38.1 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000001-0001-0001-0001-000000000001")
+  )
+  (label "GND"
+    (at 73.66 43.18 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000002-0002-0002-0002-000000000002")
+  )
+  (label "SPI0_SCLK"
+    (at 73.66 48.26 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000003-0003-0003-0003-000000000003")
+  )
+  (label "SPI0_MOSI"
+    (at 73.66 53.34 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000004-0004-0004-0004-000000000004")
+  )
+  (label "SPI0_CE0"
+    (at 73.66 58.42 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000005-0005-0005-0005-000000000005")
+  )
+  (label "I2C1_SDA"
+    (at 73.66 63.5 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000006-0006-0006-0006-000000000006")
+  )
+  (label "I2C1_SCL"
+    (at 73.66 68.58 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000007-0007-0007-0007-000000000007")
+  )
+  (label "GPIO_LED"
+    (at 73.66 73.66 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000008-0008-0008-0008-000000000008")
+  )
+  (label "GPIO_DC"
+    (at 73.66 78.74 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000011-0011-0011-0011-000000000011")
+  )
+  (label "GPIO_RST"
+    (at 73.66 83.82 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000012-0012-0012-0012-000000000012")
+  )
+  (label "GPIO_INT"
+    (at 73.66 88.9 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000013-0013-0013-0013-000000000013")
+  )
+
+  (label "3V3"
+    (at 109.22 38.1 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000009-0009-0009-0009-000000000009")
+  )
+  (label "GND"
+    (at 109.22 43.18 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000a-000a-000a-000a-00000000000a")
+  )
+  (label "SPI0_SCLK"
+    (at 109.22 48.26 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000b-000b-000b-000b-00000000000b")
+  )
+  (label "SPI0_MOSI"
+    (at 109.22 53.34 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000c-000c-000c-000c-00000000000c")
+  )
+  (label "SPI0_CE0"
+    (at 109.22 58.42 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000d-000d-000d-000d-00000000000d")
+  )
+  (label "I2C1_SDA"
+    (at 109.22 63.5 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000e-000e-000e-000e-00000000000e")
+  )
+  (label "I2C1_SCL"
+    (at 109.22 68.58 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d000000f-000f-000f-000f-00000000000f")
+  )
+  (label "GPIO_LED"
+    (at 109.22 73.66 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000010-0010-0010-0010-000000000010")
+  )
+  (label "GPIO_DC"
+    (at 109.22 78.74 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000014-0014-0014-0014-000000000014")
+  )
+  (label "GPIO_RST"
+    (at 109.22 83.82 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000015-0015-0015-0015-000000000015")
+  )
+  (label "GPIO_INT"
+    (at 109.22 88.9 0)
+    (effects (font (size 1.27 1.27)))
+    (uuid "d0000016-0016-0016-0016-000000000016")
+  )
+)

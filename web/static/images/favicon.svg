@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#1d9bf0"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- Circle body -->
+    <circle cx="32" cy="28" r="23" fill="url(#grad)"/>
+    <!-- Tail that overlaps into the circle so there's no gap -->
+    <polygon points="20,42 28,44 12,60" fill="url(#grad)"/>
+  </g>
+  <!-- Wave -->
+  <path d="M18 28 c2.5-6 5-6 7.5 0 s5 6 7.5 0 s5-6 7.5 0 s5 6 6 0" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+</svg>

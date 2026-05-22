@@ -1,0 +1,478 @@
+openapi: 3.1.0
+info:
+  title: RFMP Daemon API
+  version: 0.5.0
+  description: |
+    HTTP and WebSocket API for the RFMP (RF Microblog Protocol) daemon.
+    All endpoints return JSON. The WebSocket stream at /stream delivers
+    real-time events as JSON frames.
+
+servers:
+  - url: http://localhost:8080
+    description: Default local daemon
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Daemon is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+
+  /status:
+    get:
+      summary: Daemon status and statistics
+      operationId: getStatus
+      responses:
+        '200':
+          description: Current daemon status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+
+  /messages:
+    get:
+      summary: List messages
+      operationId: getMessages
+      parameters:
+        - name: channel
+          in: query
+          schema:
+            type: string
+          description: Filter by channel name
+        - name: from_node
+          in: query
+          schema:
+            type: string
+          description: Filter by sender callsign
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum messages to return
+      responses:
+        '200':
+          description: List of messages (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+    post:
+      summary: Send a message
+      operationId: postMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Message accepted and queued for transmission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /messages/{id}:
+    get:
+      summary: Get a single message by ID
+      operationId: getMessageById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /channels:
+    get:
+      summary: List channels
+      operationId: getChannels
+      responses:
+        '200':
+          description: List of known channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Channel'
+
+    post:
+      summary: Create a channel
+      operationId: createChannel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  pattern: '^[a-z0-9_-]{1,20}$'
+      responses:
+        '200':
+          description: Channel created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  message_count:
+                    type: integer
+
+  /channels/{name}:
+    delete:
+      summary: Delete an empty channel
+      operationId: deleteChannel
+      description: Deletes a channel only if it has no messages.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Channel deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: deleted
+        '404':
+          description: Channel not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Channel has messages and cannot be deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /nodes:
+    get:
+      summary: List active nodes
+      operationId: getNodes
+      parameters:
+        - name: active_hours
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 24
+          description: Only nodes seen within this many hours
+      responses:
+        '200':
+          description: List of active nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Node'
+
+  /config/callsign:
+    get:
+      summary: Get node callsign
+      operationId: getCallsign
+      responses:
+        '200':
+          description: Current callsign configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallsignConfig'
+
+    post:
+      summary: Set node callsign
+      operationId: setCallsign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [callsign, ssid]
+              properties:
+                callsign:
+                  type: string
+                  pattern: '^[A-Z0-9]{1,6}$'
+                ssid:
+                  type: integer
+                  minimum: 0
+                  maximum: 15
+      responses:
+        '200':
+          description: Callsign updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  callsign:
+                    type: string
+                  ssid:
+                    type: integer
+                  full_callsign:
+                    type: string
+
+  /stream:
+    get:
+      summary: WebSocket event stream
+      operationId: streamEvents
+      description: |
+        Upgrade to WebSocket. The server pushes JSON events.
+        The client does not need to send any messages (read-only stream).
+
+        ## Event Types
+
+        ### `message` — New message received or sent
+
+        ```json
+        {
+          "type": "message",
+          "data": {
+            "id": "d4728395545d",
+            "from_node": "N0CALL",
+            "author": "Doug",
+            "timestamp": "20240115T120000Z",
+            "channel": "general",
+            "reply_to": null,
+            "body": "Hello world",
+            "received_at": "2024-01-15T12:00:01Z",
+            "transmitted_at": null
+          }
+        }
+        ```
+
+        ## Connection
+
+        Connect via standard WebSocket upgrade:
+        ```
+        ws://HOST:PORT/stream
+        ```
+
+        The server sends events as they occur. No authentication required.
+        Reconnect on disconnect with exponential backoff.
+      responses:
+        '101':
+          description: WebSocket upgrade successful
+
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 12-char hex message ID
+          example: d4728395545d
+        from_node:
+          type: string
+          description: Sender callsign (e.g. N0CALL-1)
+          example: N0CALL
+        author:
+          type: string
+          nullable: true
+          description: Human-readable author name (if set)
+          example: Doug
+        timestamp:
+          type: string
+          description: UTC timestamp in YYYYMMDDTHHMMSSZ format
+          example: "20240115T120000Z"
+        channel:
+          type: string
+          example: general
+        reply_to:
+          type: string
+          nullable: true
+          description: ID of the message being replied to
+        body:
+          type: string
+          description: Message text (max 10000 chars)
+        received_at:
+          type: string
+          format: date-time
+          description: When the daemon received this message
+        transmitted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the message was transmitted over RF
+
+    SendMessageRequest:
+      type: object
+      required: [channel, body]
+      properties:
+        channel:
+          type: string
+          pattern: '^[a-z0-9_-]{1,20}$'
+          description: Target channel
+          example: general
+        body:
+          type: string
+          maxLength: 10000
+          description: Message text
+        reply_to:
+          type: string
+          nullable: true
+          description: ID of message to reply to
+        author:
+          type: string
+          nullable: true
+          description: Display name for the sender
+
+    Channel:
+      type: object
+      properties:
+        name:
+          type: string
+        first_message:
+          type: string
+          format: date-time
+        last_message:
+          type: string
+          format: date-time
+        message_count:
+          type: integer
+        unique_nodes:
+          type: integer
+
+    Node:
+      type: object
+      properties:
+        callsign:
+          type: string
+        first_seen:
+          type: string
+          format: date-time
+        last_seen:
+          type: string
+          format: date-time
+        last_sync:
+          type: string
+          format: date-time
+          nullable: true
+        message_count:
+          type: integer
+        sync_count:
+          type: integer
+        req_count:
+          type: integer
+
+    CallsignConfig:
+      type: object
+      properties:
+        callsign:
+          type: string
+          example: N0CALL
+        ssid:
+          type: integer
+          example: 0
+        full_callsign:
+          type: string
+          example: N0CALL
+
+    Status:
+      type: object
+      properties:
+        version:
+          type: string
+          example: "0.3.0"
+        uptime_seconds:
+          type: number
+        connected_to_direwolf:
+          type: boolean
+        node_callsign:
+          type: string
+        stats:
+          type: object
+          properties:
+            uptime_seconds:
+              type: number
+            message_count:
+              type: integer
+            active_nodes:
+              type: integer
+            vector_clock:
+              type: object
+              additionalProperties:
+                type: integer
+            timing:
+              type: object
+              properties:
+                base_delay:
+                  type: number
+                jitter:
+                  type: number
+                transmissions:
+                  type: integer
+                last_transmit:
+                  type: string
+                  format: date-time
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+
+    WebSocketEvent:
+      type: object
+      required: [type, data]
+      properties:
+        type:
+          type: string
+          enum: [message]
+          description: Event type
+        data:
+          $ref: '#/components/schemas/Message'
