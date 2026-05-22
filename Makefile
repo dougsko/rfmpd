@@ -18,19 +18,23 @@ DOCKER_ARGS := --build-arg VERSION=$(VERSION) \
 
 dist: deb rpm apk tarball sha256
 
-deb: | $(DIST)
+deb:
+	@mkdir -p $(DIST)
 	docker build --target deb-arm64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 	docker build --target deb-amd64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 
-rpm: | $(DIST)
+rpm:
+	@mkdir -p $(DIST)
 	docker build --target rpm-arm64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 	docker build --target rpm-amd64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 
-apk: | $(DIST)
+apk:
+	@mkdir -p $(DIST)
 	docker build --target apk-arm64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 	docker build --target apk-amd64-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 
-tarball: | $(DIST)
+tarball:
+	@mkdir -p $(DIST)
 	docker build --target tarball-output $(DOCKER_ARGS) --output type=local,dest=$(DIST) .
 
 sha256:
@@ -49,6 +53,3 @@ cover:
 
 clean:
 	rm -rf $(DIST) $(NAME) coverage.out coverage.html
-
-$(DIST):
-	mkdir -p $(DIST)
