@@ -49,7 +49,7 @@ COPY radio/99-rfmp-radio.rules ./
 COPY packaging/systemd/ ./systemd/
 COPY packaging/deb/ ./deb/
 COPY packaging/scripts/enable-overlays.sh ./enable-overlays.sh
-RUN mkdir -p pkg/DEBIAN pkg/usr/bin pkg/etc/rfmpd/direwolf \
+RUN mkdir -p /out pkg/DEBIAN pkg/usr/bin pkg/etc/rfmpd/direwolf \
       pkg/lib/systemd/system pkg/usr/lib/udev/rules.d pkg/usr/share/rfmpd && \
     cp rfmpd pkg/usr/bin/rfmpd && chmod 755 pkg/usr/bin/rfmpd && \
     cp config.yaml pkg/etc/rfmpd/config.yaml && \
@@ -87,7 +87,7 @@ COPY radio/99-rfmp-radio.rules ./
 COPY packaging/systemd/ ./systemd/
 COPY packaging/deb/ ./deb/
 COPY packaging/scripts/enable-overlays.sh ./enable-overlays.sh
-RUN mkdir -p pkg/DEBIAN pkg/usr/bin pkg/etc/rfmpd/direwolf \
+RUN mkdir -p /out pkg/DEBIAN pkg/usr/bin pkg/etc/rfmpd/direwolf \
       pkg/lib/systemd/system pkg/usr/lib/udev/rules.d pkg/usr/share/rfmpd && \
     cp rfmpd pkg/usr/bin/rfmpd && chmod 755 pkg/usr/bin/rfmpd && \
     cp config.yaml pkg/etc/rfmpd/config.yaml && \
