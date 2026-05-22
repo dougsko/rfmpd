@@ -129,7 +129,7 @@ COPY radio/99-rfmp-radio.rules ./
 COPY packaging/systemd/ ./systemd/
 COPY packaging/rpm/rfmpd.spec ./rfmpd.spec
 COPY packaging/scripts/enable-overlays.sh ./enable-overlays.sh
-RUN mkdir -p /root/rpmbuild/SOURCES /root/rpmbuild/SPECS /root/rpmbuild/BUILD /root/rpmbuild/RPMS /root/rpmbuild/SRPMS && \
+RUN mkdir -p /out /root/rpmbuild/SOURCES /root/rpmbuild/SPECS /root/rpmbuild/BUILD /root/rpmbuild/RPMS /root/rpmbuild/SRPMS && \
     cp rfmpd config.yaml direwolf-*.conf 99-rfmp-radio.rules enable-overlays.sh \
        systemd/rfmpd.service systemd/direwolf@.service /root/rpmbuild/SOURCES/ && \
     sed -e "s/%{pkg_name}/${NAME}/" -e "s/%{pkg_version}/${VERSION}/" \
@@ -158,7 +158,7 @@ COPY radio/99-rfmp-radio.rules ./
 COPY packaging/systemd/ ./systemd/
 COPY packaging/rpm/rfmpd.spec ./rfmpd.spec
 COPY packaging/scripts/enable-overlays.sh ./enable-overlays.sh
-RUN mkdir -p /root/rpmbuild/SOURCES /root/rpmbuild/SPECS /root/rpmbuild/BUILD /root/rpmbuild/RPMS /root/rpmbuild/SRPMS && \
+RUN mkdir -p /out /root/rpmbuild/SOURCES /root/rpmbuild/SPECS /root/rpmbuild/BUILD /root/rpmbuild/RPMS /root/rpmbuild/SRPMS && \
     cp rfmpd config.yaml direwolf-*.conf 99-rfmp-radio.rules enable-overlays.sh \
        systemd/rfmpd.service systemd/direwolf@.service /root/rpmbuild/SOURCES/ && \
     sed -e "s/%{pkg_name}/${NAME}/" -e "s/%{pkg_version}/${VERSION}/" \
