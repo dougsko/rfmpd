@@ -1,5 +1,5 @@
 # Package metadata — single source of truth for all package formats
-VERSION     ?= 0.5.1
+VERSION     ?= 0.5.2
 NAME        := rfmpd
 SUMMARY     := RFMP daemon — resilient mesh messaging over AX.25 packet radio
 MAINTAINER  := Doug Prostko
