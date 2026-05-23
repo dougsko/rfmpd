@@ -1,0 +1,16 @@
+[Unit]
+Description=RFMP Display UI
+After=rfmpd.service
+Requires=rfmpd.service
+
+[Service]
+Type=simple
+User=rfmpd
+Group=rfmpd
+SupplementaryGroups=spi i2c gpio
+ExecStart=/usr/bin/rfmp-display -addr http://127.0.0.1:8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

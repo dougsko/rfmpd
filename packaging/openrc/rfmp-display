@@ -1,0 +1,12 @@
+#!/sbin/openrc-run
+
+description="RFMP Display UI"
+command="/usr/bin/rfmp-display"
+command_args="-addr http://127.0.0.1:8080"
+command_user="rfmpd:rfmpd"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
+
+depend() {
+	need rfmpd
+}
