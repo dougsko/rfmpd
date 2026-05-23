@@ -1,10 +1,11 @@
-//go:build hw
+//go:build !sim
 
 package main
 
 import (
 	"fmt"
 	"log"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -27,7 +28,8 @@ const (
 	gpioDC  = "228" // PH4 - Display Data/Command (physical pin 18)
 	gpioRST = "257" // PI1 - Display Reset (physical pin 12)
 	gpioINT = "269" // PI13 - Keyboard INT active low (physical pin 7)
-	gpioLED = "256" // PI0 - Status LED (physical pin 29)
+	gpioLED      = "256" // PI0 - Status LED (physical pin 29)
+	gpioShutdown = "226" // PH2 - Shutdown button (physical pin 11)
 
 	kbI2CBus  = "1"
 	kbI2CAddr = 0x1F
@@ -66,6 +68,10 @@ type HWDisplay struct {
 	dc     gpio.PinOut
 	rst    gpio.PinOut
 	spiBuf [ScreenW * ScreenH * 2]byte
+}
+
+func initPlatform() {
+	startShutdownMonitor()
 }
 
 func newDisplay() Display { return &HWDisplay{} }
@@ -479,4 +485,44 @@ func (l *HWLED) Close() {
 	}
 	l.mu.Unlock()
 	l.Off()
+}
+
+// --- Shutdown Button ---
+
+func startShutdownMonitor() {
+	if err := initHost(); err != nil {
+		log.Printf("shutdown button: periph init failed: %v", err)
+		return
+	}
+
+	pin := gpioreg.ByName(gpioShutdown)
+	if pin == nil {
+		log.Printf("shutdown button: gpio %s not found (no button wired?)", gpioShutdown)
+		return
+	}
+
+	inPin, ok := pin.(gpio.PinIn)
+	if !ok {
+		log.Printf("shutdown button: gpio %s not an input pin", gpioShutdown)
+		return
+	}
+
+	if err := inPin.In(gpio.PullUp, gpio.FallingEdge); err != nil {
+		log.Printf("shutdown button: edge setup failed: %v", err)
+		return
+	}
+
+	go func() {
+		for {
+			if !inPin.WaitForEdge(0) {
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
+			if inPin.Read() == gpio.Low {
+				log.Println("shutdown button pressed, initiating shutdown")
+				exec.Command("shutdown", "-h", "now").Start()
+				return
+			}
+		}
+	}()
 }

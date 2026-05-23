@@ -369,7 +369,7 @@ const file_internal_protocol_pb_rfmp_proto_rawDesc = "" +
 	"\x06vector\x18\x02 \x03(\v2\x16.rfmp.Svec.VectorEntryR\x06vector\x1a9\n" +
 	"\vVectorEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01B2Z0github.com/dprostko/rfmp-go/internal/protocol/pbb\x06proto3"
+	"\x05value\x18\x02 \x01(\rR\x05value:\x028\x01B2Z0github.com/dougsko/rfmpd/internal/protocol/pbb\x06proto3"
 
 var (
 	file_internal_protocol_pb_rfmp_proto_rawDescOnce sync.Once

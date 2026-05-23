@@ -26,6 +26,8 @@ type SimDisplay struct {
 	upgrader websocket.Upgrader
 }
 
+func initPlatform() {}
+
 func newDisplay() Display {
 	return &SimDisplay{
 		clients: make(map[*websocket.Conn]bool),

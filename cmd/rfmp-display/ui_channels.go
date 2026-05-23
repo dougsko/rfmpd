@@ -72,7 +72,7 @@ func (s *ChannelListScreen) Render(fb *Framebuffer) {
 	if s.app.err != "" {
 		fb.DrawStringWrap(4, ScreenH-FontH*2, ScreenW-8, s.app.err, ColorRed, ColorBlack)
 	}
-	fb.DrawString(4, ScreenH-FontH, "n:new d:del Enter:open", ColorLightGray, ColorBlack)
+	fb.DrawString(4, ScreenH-FontH, "n:new d:del s:settings", ColorLightGray, ColorBlack)
 }
 
 func (s *ChannelListScreen) HandleKey(ev KeyEvent) Screen {
@@ -93,6 +93,8 @@ func (s *ChannelListScreen) HandleKey(ev KeyEvent) Screen {
 	}
 
 	switch ev.Key {
+	case 's':
+		return NewSettingsScreen(s.app)
 	case 'n':
 		return NewCreateChannelScreen(s.app)
 	case 'd':

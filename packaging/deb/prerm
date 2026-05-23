@@ -1,5 +1,12 @@
 #!/bin/sh
 set -e
 
-systemctl stop rfmpd 2>/dev/null || true
-systemctl disable rfmpd 2>/dev/null || true
+case "$1" in
+    remove|upgrade)
+        systemctl stop rfmp-display.service 2>/dev/null || true
+        systemctl stop rfmpd.service 2>/dev/null || true
+        systemctl stop 'direwolf@*' 2>/dev/null || true
+        systemctl disable rfmp-display.service 2>/dev/null || true
+        systemctl disable rfmpd.service 2>/dev/null || true
+        ;;
+esac

@@ -15,11 +15,13 @@ package() {
 	mkdir -p "$pkgdir"/usr/share/rfmpd
 
 	install -m755 "$srcdir"/rfmpd "$pkgdir"/usr/bin/rfmpd
+	install -m755 "$srcdir"/rfmp-display "$pkgdir"/usr/bin/rfmp-display
 	install -m644 "$srcdir"/config.yaml "$pkgdir"/etc/rfmpd/config.yaml
 	install -m644 "$srcdir"/direwolf-digirig.conf "$pkgdir"/etc/rfmpd/direwolf/
 	install -m644 "$srcdir"/direwolf-digiriglite.conf "$pkgdir"/etc/rfmpd/direwolf/
 	install -m644 "$srcdir"/direwolf-qmx.conf "$pkgdir"/etc/rfmpd/direwolf/
 	install -m755 "$srcdir"/openrc-rfmpd "$pkgdir"/etc/init.d/rfmpd
+	install -m755 "$srcdir"/openrc-rfmp-display "$pkgdir"/etc/init.d/rfmp-display
 	install -m755 "$srcdir"/openrc-direwolf "$pkgdir"/etc/init.d/direwolf
 	install -m644 "$srcdir"/rfmp-radio.conf "$pkgdir"/etc/mdev.d/rfmp-radio.conf
 	install -m755 "$srcdir"/enable-overlays.sh "$pkgdir"/usr/share/rfmpd/enable-overlays.sh

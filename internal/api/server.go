@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dougsko/rfmpd/internal/config"
 	"github.com/gorilla/websocket"
 )
 
@@ -29,6 +30,8 @@ type DaemonInterface interface {
 	SendMessage(channel, body string, replyTo *string, author *string) (map[string]interface{}, error)
 	GetStats() (map[string]interface{}, error)
 	GetConfig() (string, int, string)
+	GetFullConfig() *config.Config
+	SaveConfig(cfg *config.Config) error
 	SetCallsign(callsign string, ssid int) error
 	GetDB() interface{}
 	IsConnected() bool
@@ -135,6 +138,8 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/channels/", s.handleChannelByName)
 	s.mux.HandleFunc("/status", s.handleStatus)
 	s.mux.HandleFunc("/config/callsign", s.handleCallsign)
+	s.mux.HandleFunc("/config", s.handleConfig)
+	s.mux.HandleFunc("/shutdown", s.handleShutdown)
 	s.mux.HandleFunc("/stream", s.handleStream)
 }
 

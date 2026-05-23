@@ -167,3 +167,74 @@ func (c *Client) GetStatus() (*Status, error) {
 	}
 	return &status, nil
 }
+
+type ConfigData struct {
+	Node struct {
+		Callsign string `json:"callsign"`
+		SSID     int    `json:"ssid"`
+	} `json:"node"`
+	Network struct {
+		DirewolfHost      string `json:"direwolf_host"`
+		DirewolfPort      int    `json:"direwolf_port"`
+		ReconnectInterval int    `json:"reconnect_interval"`
+		OfflineMode       bool   `json:"offline_mode"`
+	} `json:"network"`
+	Timing struct {
+		BaseDelay float64 `json:"base_delay"`
+		Jitter    float64 `json:"jitter"`
+	} `json:"timing"`
+	Sync struct {
+		SyncInterval int `json:"sync_interval"`
+	} `json:"sync"`
+	Logging struct {
+		Level string `json:"level"`
+	} `json:"logging"`
+}
+
+func (c *Client) GetConfig() (*ConfigData, error) {
+	resp, err := c.http.Get(c.baseURL + "/config")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("get config: %d %s", resp.StatusCode, body)
+	}
+
+	var cfg ConfigData
+	if err := json.NewDecoder(resp.Body).Decode(&cfg); err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
+func (c *Client) SaveConfig(cfg *ConfigData) error {
+	data, _ := json.Marshal(cfg)
+	req, err := http.NewRequest("PUT", c.baseURL+"/config", bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("%s", body)
+	}
+	return nil
+}
+
+func (c *Client) Shutdown() error {
+	resp, err := c.http.Post(c.baseURL+"/shutdown", "application/json", nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}

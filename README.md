@@ -1,4 +1,4 @@
-# RFMP Daemon (Go)
+# RFMP Daemon
 
 RF Microblog Protocol (RFMP) v0.5 daemon for packet radio networks.
 
@@ -92,13 +92,13 @@ udev rules. Build them with `make dist` (requires Docker):
 make dist             # builds .deb, .rpm, .apk, and tarballs in ./dist/
 
 # Debian/Ubuntu/Raspberry Pi OS
-sudo apt install ./rfmpd_0.5.0_arm64.deb
+sudo apt install ./dist/rfmpd_*_arm64.deb
 
 # Fedora/RHEL
-sudo dnf install ./rfmpd-0.5.0-1.aarch64.rpm
+sudo dnf install ./dist/rfmpd-*.aarch64.rpm
 
 # Alpine
-sudo apk add --allow-untrusted ./rfmpd-0.5.0-1-aarch64.apk
+sudo apk add --allow-untrusted ./dist/rfmpd-*-aarch64.apk
 ```
 
 After install, set your callsign and start the service:

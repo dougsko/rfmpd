@@ -1,6 +1,8 @@
 #!/bin/sh
+rc-service rfmp-display stop 2>/dev/null || true
 rc-service rfmpd stop 2>/dev/null || true
 rc-service direwolf.digirig stop 2>/dev/null || true
 rc-service direwolf.digiriglite stop 2>/dev/null || true
 rc-service direwolf.qmx stop 2>/dev/null || true
+rc-update del rfmp-display default 2>/dev/null || true
 rc-update del rfmpd default 2>/dev/null || true

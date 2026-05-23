@@ -103,7 +103,15 @@ function initializeElements() {
         loadingSpinner: document.getElementById('loadingSpinner'),
 
         // Toast
-        toast: document.getElementById('toast')
+        toast: document.getElementById('toast'),
+
+        // Settings
+        settingsBtn: document.getElementById('settingsBtn'),
+        settingsModal: document.getElementById('settingsModal'),
+        closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+        settingsBody: document.getElementById('settingsBody'),
+        settingsSaveBtn: document.getElementById('settingsSaveBtn'),
+        settingsShutdownBtn: document.getElementById('settingsShutdownBtn')
     };
 
 }
@@ -323,6 +331,20 @@ function setupEventListeners() {
                 if (app.elements.newChannelRow) app.elements.newChannelRow.style.display = 'none';
             }
         });
+    }
+
+    // Settings
+    if (app.elements.settingsBtn) {
+        app.elements.settingsBtn.addEventListener('click', openSettings);
+    }
+    if (app.elements.closeSettingsBtn) {
+        app.elements.closeSettingsBtn.addEventListener('click', closeSettings);
+    }
+    if (app.elements.settingsSaveBtn) {
+        app.elements.settingsSaveBtn.addEventListener('click', saveSettings);
+    }
+    if (app.elements.settingsShutdownBtn) {
+        app.elements.settingsShutdownBtn.addEventListener('click', shutdownDevice);
     }
 
     // Refresh
@@ -1123,6 +1145,111 @@ function truncateText(text, max) {
     if (!text) return '';
     if (text.length <= max) return text;
     return text.slice(0, max - 1) + '…';
+}
+
+// Settings management
+async function openSettings() {
+    app.elements.settingsModal.classList.add('active');
+    app.elements.settingsBody.innerHTML = '<div class="settings-loading">Loading configuration...</div>';
+    app.elements.settingsSaveBtn.disabled = true;
+
+    try {
+        const cfg = await apiCall('/config');
+        renderSettingsForm(cfg);
+        app.elements.settingsSaveBtn.disabled = false;
+    } catch (e) {
+        app.elements.settingsBody.innerHTML = '<div class="settings-error">Failed to load configuration</div>';
+    }
+}
+
+function closeSettings() {
+    app.elements.settingsModal.classList.remove('active');
+}
+
+function renderSettingsForm(cfg) {
+    const node = cfg.node || {};
+    const network = cfg.network || {};
+    const sync = cfg.sync || {};
+    const logging = cfg.logging || {};
+
+    app.elements.settingsBody.innerHTML = `
+        <div class="settings-form">
+            <div class="settings-group">
+                <h3>Node</h3>
+                <label>Callsign<input type="text" id="cfg-callsign" value="${escapeHtml(node.callsign || '')}"></label>
+                <label>SSID<input type="number" id="cfg-ssid" value="${node.ssid || 0}" min="0" max="15"></label>
+            </div>
+            <div class="settings-group">
+                <h3>Network</h3>
+                <label>Direwolf Host<input type="text" id="cfg-dw-host" value="${escapeHtml(network.direwolf_host || '')}"></label>
+                <label>Direwolf Port<input type="number" id="cfg-dw-port" value="${network.direwolf_port || 8001}"></label>
+            </div>
+            <div class="settings-group">
+                <h3>Sync</h3>
+                <label>Sync Interval (sec)<input type="number" id="cfg-sync-interval" value="${sync.sync_interval || 60}" min="5"></label>
+            </div>
+            <div class="settings-group">
+                <h3>Logging</h3>
+                <label>Level
+                    <select id="cfg-log-level">
+                        <option value="debug" ${logging.level === 'debug' ? 'selected' : ''}>debug</option>
+                        <option value="info" ${logging.level === 'info' ? 'selected' : ''}>info</option>
+                        <option value="warn" ${logging.level === 'warn' ? 'selected' : ''}>warn</option>
+                        <option value="error" ${logging.level === 'error' ? 'selected' : ''}>error</option>
+                    </select>
+                </label>
+            </div>
+        </div>
+    `;
+}
+
+async function saveSettings() {
+    const cfg = {
+        node: {
+            callsign: document.getElementById('cfg-callsign').value.trim(),
+            ssid: parseInt(document.getElementById('cfg-ssid').value) || 0
+        },
+        network: {
+            direwolf_host: document.getElementById('cfg-dw-host').value.trim(),
+            direwolf_port: parseInt(document.getElementById('cfg-dw-port').value) || 8001
+        },
+        sync: {
+            sync_interval: parseInt(document.getElementById('cfg-sync-interval').value) || 60
+        },
+        logging: {
+            level: document.getElementById('cfg-log-level').value
+        }
+    };
+
+    app.elements.settingsSaveBtn.disabled = true;
+    app.elements.settingsSaveBtn.textContent = 'Saving...';
+
+    try {
+        await fetch(`${app.config.apiUrl}/config`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cfg)
+        });
+        showToast('Configuration saved. Daemon restarting...');
+        closeSettings();
+    } catch (e) {
+        showToast('Failed to save configuration');
+    } finally {
+        app.elements.settingsSaveBtn.disabled = false;
+        app.elements.settingsSaveBtn.textContent = 'Save & Restart';
+    }
+}
+
+async function shutdownDevice() {
+    if (!confirm('Shutdown the device? You will lose connectivity.')) return;
+
+    try {
+        await fetch(`${app.config.apiUrl}/shutdown`, { method: 'POST' });
+        showToast('Shutdown initiated...');
+        closeSettings();
+    } catch (e) {
+        showToast('Failed to initiate shutdown');
+    }
 }
 
 // Add missing styles for no-messages

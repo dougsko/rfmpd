@@ -1018,4 +1018,4 @@ Authors' Address
    Doug Prostko
 
    Email: (see repository)
-   URI:   https://github.com/dprostko/rfmp-go
+   URI:   https://github.com/dougsko/rfmpd

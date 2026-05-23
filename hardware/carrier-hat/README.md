@@ -42,6 +42,14 @@ wires and makes assembly plug-and-play.
     │   │                         │    └──────────────────┘  │
     │   └─────────────────────────┘                          │
     │                                                         │
+    │   ┌──────────────────┐                                  │
+    │   │ J4: SHUTDOWN BTN │                                  │
+    │   │ 2-pin JST-XH    │                                  │
+    │   │                  │                                  │
+    │   │  Pin 11 ── PH2 ─┤─ 1: GPIO_SHUTDOWN               │
+    │   │  GND ────────────┤─ 2: GND                         │
+    │   └──────────────────┘                                  │
+    │                                                         │
     │   [D1]──[R1 220Ω]──── Pin 29 (GPIO5)    Status LED    │
     │     │                                                   │
     │     └── GND (Pin 30)                                    │
@@ -61,6 +69,7 @@ wires and makes assembly plug-and-play.
 | 6 | GND | — | J2.2 |
 | 7 | GPIO4 | PI13 | J3.5 (KB INT) |
 | 9 | GND | — | J3.2 |
+| 11 | GPIO17 | PH2 | J4.1 (Shutdown BTN) |
 | 12 | GPIO18 | PI1 | J2.7 (DSP RST) |
 | 17 | 3.3V | — | J2.8 (BLK, via 3V3 bus) |
 | 18 | GPIO24 | PH4 | J2.6 (DSP DC) |
@@ -77,6 +86,7 @@ wires and makes assembly plug-and-play.
 | J1 | 2×20 female header, 2.54mm | Through-hole | 1 | Plugs onto OPi |
 | J2 | JST-XH 8-pin right-angle | B8B-XH-A | 1 | Display |
 | J3 | JST-XH 5-pin right-angle | B5B-XH-A | 1 | Keyboard |
+| J4 | JST-XH 2-pin right-angle | B2B-XH-A | 1 | Shutdown button |
 | R1 | 220Ω resistor | 0805 or axial | 1 | LED current limit |
 | D1 | LED 3mm green | Through-hole | 1 | Status indicator |
 | C1 | 100nF ceramic | 0805 | 1 | 3V3 decoupling |
@@ -107,6 +117,7 @@ The easiest connection method for each peripheral:
 |------------|-------------------|-------------|
 | ILI9341 display | Solder JST-XH 8-pin pigtail into display header holes | "JST-XH 8-pin pigtail 10cm" |
 | BBQ20KBD keyboard | Qwiic cable (4-pin) for I2C+power, plus 1 wire for INT | "Qwiic cable 10cm" + 1× Dupont F-F |
+| Shutdown button | JST-XH 2-pin pigtail to a momentary tactile switch | "JST-XH 2-pin pigtail" + tactile button |
 | Status LED | Mounted directly on HAT (D1) | Included on board |
 
 **Detailed steps:**
@@ -163,6 +174,20 @@ Alternative: skip the Qwiic cable entirely and solder a 5-pin JST-XH pigtail
 directly to the BBQ20KBD's through-hole pads (3V3, GND, SDA, SCL, INT are all
 available as solder points on the board).
 
+#### Shutdown Button
+
+A momentary tactile switch connected to J4 triggers a clean OS shutdown
+(prevents SD card corruption from pulling power):
+
+1. Get a JST-XH 2-pin pigtail (plug on one end, bare wires on the other)
+2. Solder the two bare wires to the two NO (normally-open) terminals of a
+   momentary tactile push button
+3. Plug the JST end into J4 on the HAT
+
+Pin 1 is GPIO_SHUTDOWN (pulled high internally); pin 2 is GND. Pressing the
+button pulls the GPIO low, which the software debounces and then calls
+`shutdown -h now`.
+
 ### Physical Assembly in Enclosure
 
 ```
@@ -210,6 +235,8 @@ Total cables: 2 JST-XH (click in, click out)
 |------|-----|--------------------------------|--------|
 | JST-XH 8-pin pigtail, 10cm | 1 | "JST XH 2.54 8pin wire 10cm" | $0.50 |
 | JST-XH 5-pin pigtail, 10cm | 1 | "JST XH 2.54 5pin wire 10cm" | $0.50 |
+| JST-XH 2-pin pigtail, 10cm | 1 | "JST XH 2.54 2pin wire 10cm" | $0.30 |
+| Tactile push button (momentary, NO) | 1 | "6x6mm tactile push button" | $0.10 |
 | Qwiic cable 10cm (optional, for KB) | 1 | "Qwiic STEMMA QT cable 100mm" | $1.50 |
 
 Or buy a JST-XH pigtail assortment pack (~$5 for 20 pieces in various pin counts).

@@ -12,6 +12,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/dougsko/rfmpd/internal/config"
 	"github.com/gorilla/websocket"
 )
 
@@ -58,6 +59,14 @@ func (m *mockDaemon) SetCallsign(callsign string, ssid int) error {
 
 func (m *mockDaemon) GetDB() interface{} {
 	return m.db
+}
+
+func (m *mockDaemon) GetFullConfig() *config.Config {
+	return config.DefaultConfig()
+}
+
+func (m *mockDaemon) SaveConfig(cfg *config.Config) error {
+	return nil
 }
 
 func (m *mockDaemon) IsConnected() bool {

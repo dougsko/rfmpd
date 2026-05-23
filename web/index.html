@@ -21,6 +21,8 @@
         <symbol id="icon-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
         <symbol id="icon-reply" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 17l-5-5 5-5"/><path d="M4 12h12a4 4 0 014 4v1"/></symbol>
         <symbol id="icon-hash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M4 15h16M10 3l-2 18M16 3l-2 18"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></symbol>
+        <symbol id="icon-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></symbol>
     </svg>
 </head>
 <body>
@@ -123,6 +125,10 @@
 
             <!-- Footer -->
             <div class="sidebar-footer">
+                <button class="settings-btn sidebar-settings-btn" id="settingsBtn" title="Settings">
+                    <svg class="icon"><use href="#icon-settings"/></svg>
+                    <span>Settings</span>
+                </button>
                 <button class="theme-btn sidebar-theme-btn" id="sidebarThemeBtn" title="Toggle theme">
                     <svg class="icon" id="sidebarThemeIcon"><use href="#icon-moon"/></svg>
                     <span>Toggle Theme</span>
@@ -173,6 +179,26 @@
                 <!-- Messages will be inserted here -->
             </div>
         </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-settings" id="closeSettingsBtn"><svg class="icon"><use href="#icon-x"/></svg></button>
+            </div>
+            <div class="modal-body" id="settingsBody">
+                <div class="settings-loading">Loading configuration...</div>
+            </div>
+            <div class="modal-footer settings-footer">
+                <button id="settingsSaveBtn" class="btn btn-primary" disabled>Save &amp; Restart</button>
+                <button id="settingsShutdownBtn" class="btn btn-danger" title="Shutdown device">
+                    <svg class="icon icon-sm"><use href="#icon-power"/></svg>
+                    Shutdown
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Notification Toast -->

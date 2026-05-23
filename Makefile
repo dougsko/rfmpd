@@ -42,6 +42,7 @@ sha256:
 
 build:
 	go build -ldflags="-s -w -X main.version=$(VERSION)" -o $(NAME) .
+	go build -ldflags="-s -w" -o rfmp-display ./cmd/rfmp-display
 
 test:
 	go test ./...
@@ -52,4 +53,4 @@ cover:
 	@echo "Coverage report: coverage.html"
 
 clean:
-	rm -rf $(DIST) $(NAME) coverage.out coverage.html
+	rm -rf $(DIST) $(NAME) rfmp-display coverage.out coverage.html

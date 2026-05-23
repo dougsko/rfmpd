@@ -1,18 +1,39 @@
 #!/bin/sh
 set -e
 
-useradd --system --home-dir /var/lib/rfmpd --shell /usr/sbin/nologin rfmpd 2>/dev/null || true
-usermod -a -G audio,dialout,plugdev rfmpd
+case "$1" in
+    configure)
+        # Remove brltty if present (conflicts with serial radios)
+        if dpkg -l brltty 2>/dev/null | grep -q '^ii'; then
+            apt-get remove -y brltty 2>/dev/null || true
+        fi
 
-mkdir -p /var/lib/rfmpd /var/log/rfmpd
-chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
+        # Create system user
+        if ! getent passwd rfmpd >/dev/null 2>&1; then
+            useradd --system --home-dir /var/lib/rfmpd --shell /usr/sbin/nologin rfmpd
+        fi
+        usermod -a -G audio,dialout,plugdev rfmpd
 
-systemctl daemon-reload
-systemctl enable rfmpd
-udevadm control --reload-rules
-udevadm trigger
+        # Create runtime directories
+        mkdir -p /var/lib/rfmpd /var/log/rfmpd
+        chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
 
-# Enable SPI/I2C overlays for display hardware
-if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then
-    . /usr/share/rfmpd/enable-overlays.sh
-fi
+        # Reload systemd and enable services
+        systemctl daemon-reload
+        systemctl enable rfmpd.service
+        systemctl enable rfmp-display.service
+
+        # Reload udev rules
+        udevadm control --reload-rules
+        udevadm trigger
+
+        # Start services
+        systemctl start rfmpd.service || true
+        systemctl start rfmp-display.service || true
+
+        # Enable SPI/I2C overlays for display hardware
+        if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then
+            . /usr/share/rfmpd/enable-overlays.sh
+        fi
+        ;;
+esac

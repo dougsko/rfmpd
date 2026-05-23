@@ -3,10 +3,13 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dougsko/rfmpd/internal/config"
 )
 
 var channelRegex = regexp.MustCompile(`^[a-z0-9_-]{1,20}$`)
@@ -347,6 +350,68 @@ func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		cfg := s.daemon.GetFullConfig()
+		writeJSON(w, 200, cfg)
+	case "PUT":
+		existing := s.daemon.GetFullConfig()
+		var incoming config.Config
+		if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
+			writeJSON(w, 422, map[string]string{"detail": "invalid JSON: " + err.Error()})
+			return
+		}
+		// Merge: only override fields the client sends (non-zero)
+		merged := *existing
+		if incoming.Node.Callsign != "" {
+			merged.Node.Callsign = strings.ToUpper(strings.TrimSpace(incoming.Node.Callsign))
+		}
+		merged.Node.SSID = incoming.Node.SSID
+		if incoming.Network.DirewolfHost != "" {
+			merged.Network.DirewolfHost = incoming.Network.DirewolfHost
+		}
+		if incoming.Network.DirewolfPort > 0 {
+			merged.Network.DirewolfPort = incoming.Network.DirewolfPort
+		}
+		merged.Network.OfflineMode = incoming.Network.OfflineMode
+		if incoming.Sync.SyncInterval > 0 {
+			merged.Sync.SyncInterval = incoming.Sync.SyncInterval
+		}
+		if incoming.Logging.Level != "" {
+			merged.Logging.Level = incoming.Logging.Level
+		}
+		if merged.Node.Callsign == "" {
+			writeJSON(w, 422, map[string]string{"detail": "callsign is required"})
+			return
+		}
+		if err := s.daemon.SaveConfig(&merged); err != nil {
+			writeJSON(w, 500, map[string]string{"detail": err.Error()})
+			return
+		}
+		writeJSON(w, 200, map[string]string{"status": "saved, restarting"})
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			exec.Command("systemctl", "restart", "rfmpd").Start()
+		}()
+	default:
+		writeJSON(w, 405, map[string]string{"detail": "method not allowed"})
+	}
+}
+
+func (s *Server) handleShutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, 405, map[string]string{"detail": "method not allowed"})
+		return
+	}
+	s.logger.Info("Shutdown requested via API")
+	writeJSON(w, 200, map[string]string{"status": "shutting down"})
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		exec.Command("shutdown", "-h", "now").Start()
+	}()
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

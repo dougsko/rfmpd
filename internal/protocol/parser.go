@@ -3,7 +3,7 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/dprostko/rfmp-go/internal/protocol/pb"
+	"github.com/dougsko/rfmpd/internal/protocol/pb"
 	"google.golang.org/protobuf/proto"
 )
 

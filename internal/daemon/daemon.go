@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dprostko/rfmp-go/internal/config"
-	"github.com/dprostko/rfmp-go/internal/network"
-	"github.com/dprostko/rfmp-go/internal/protocol"
-	"github.com/dprostko/rfmp-go/internal/storage"
-	gosync "github.com/dprostko/rfmp-go/internal/sync"
+	"github.com/dougsko/rfmpd/internal/config"
+	"github.com/dougsko/rfmpd/internal/network"
+	"github.com/dougsko/rfmpd/internal/protocol"
+	"github.com/dougsko/rfmpd/internal/storage"
+	gosync "github.com/dougsko/rfmpd/internal/sync"
 )
 
 type Daemon struct {
@@ -491,6 +491,22 @@ func (d *Daemon) SetCallsign(callsign string, ssid int) error {
 		}
 	}
 	return nil
+}
+
+func (d *Daemon) GetFullConfig() *config.Config {
+	return d.Config
+}
+
+func (d *Daemon) SaveConfig(cfg *config.Config) error {
+	path := d.ConfigPath
+	if path == "" {
+		path = d.Config.LoadedFrom
+	}
+	if path == "" {
+		return fmt.Errorf("no config file path known")
+	}
+	cfg.LoadedFrom = path
+	return cfg.SaveToFile(path)
 }
 
 func (d *Daemon) IsConnected() bool {

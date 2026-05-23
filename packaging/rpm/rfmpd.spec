@@ -16,22 +16,26 @@ mkdir -p %{buildroot}/lib/systemd/system
 mkdir -p %{buildroot}/usr/lib/udev/rules.d
 mkdir -p %{buildroot}/usr/share/rfmpd
 cp %{_sourcedir}/rfmpd %{buildroot}/usr/bin/rfmpd
+cp %{_sourcedir}/rfmp-display %{buildroot}/usr/bin/rfmp-display
 cp %{_sourcedir}/config.yaml %{buildroot}/etc/rfmpd/config.yaml
 cp %{_sourcedir}/direwolf-digirig.conf %{buildroot}/etc/rfmpd/direwolf/
 cp %{_sourcedir}/direwolf-digiriglite.conf %{buildroot}/etc/rfmpd/direwolf/
 cp %{_sourcedir}/direwolf-qmx.conf %{buildroot}/etc/rfmpd/direwolf/
 cp %{_sourcedir}/rfmpd.service %{buildroot}/lib/systemd/system/
+cp %{_sourcedir}/rfmp-display.service %{buildroot}/lib/systemd/system/
 cp %{_sourcedir}/direwolf@.service %{buildroot}/lib/systemd/system/
 cp %{_sourcedir}/99-rfmp-radio.rules %{buildroot}/usr/lib/udev/rules.d/
 cp %{_sourcedir}/enable-overlays.sh %{buildroot}/usr/share/rfmpd/
 
 %files
 /usr/bin/rfmpd
+/usr/bin/rfmp-display
 %config(noreplace) /etc/rfmpd/config.yaml
 %config(noreplace) /etc/rfmpd/direwolf/direwolf-digirig.conf
 %config(noreplace) /etc/rfmpd/direwolf/direwolf-digiriglite.conf
 %config(noreplace) /etc/rfmpd/direwolf/direwolf-qmx.conf
 /lib/systemd/system/rfmpd.service
+/lib/systemd/system/rfmp-display.service
 /lib/systemd/system/direwolf@.service
 /usr/lib/udev/rules.d/99-rfmp-radio.rules
 /usr/share/rfmpd/enable-overlays.sh
@@ -44,17 +48,22 @@ usermod -a -G audio,dialout,plugdev rfmpd
 mkdir -p /var/lib/rfmpd /var/log/rfmpd
 chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
 systemctl daemon-reload
+systemctl enable rfmpd.service
+systemctl enable rfmp-display.service
+systemctl start rfmpd.service || true
+systemctl start rfmp-display.service || true
 udevadm control --reload-rules
 udevadm trigger
-loginctl enable-linger rfmpd
-# Enable SPI/I2C overlays for display hardware
 if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then
     . /usr/share/rfmpd/enable-overlays.sh
 fi
 
 %preun
-systemctl stop rfmpd 2>/dev/null || true
-systemctl disable rfmpd 2>/dev/null || true
+systemctl stop rfmp-display.service 2>/dev/null || true
+systemctl stop rfmpd.service 2>/dev/null || true
+systemctl stop 'direwolf@*' 2>/dev/null || true
+systemctl disable rfmp-display.service 2>/dev/null || true
+systemctl disable rfmpd.service 2>/dev/null || true
 
 %postun
 if [ "$1" = "0" ]; then

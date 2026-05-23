@@ -15,9 +15,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/dprostko/rfmp-go/internal/api"
-	"github.com/dprostko/rfmp-go/internal/config"
-	"github.com/dprostko/rfmp-go/internal/daemon"
+	"github.com/dougsko/rfmpd/internal/api"
+	"github.com/dougsko/rfmpd/internal/config"
+	"github.com/dougsko/rfmpd/internal/daemon"
 )
 
 var version = "dev"

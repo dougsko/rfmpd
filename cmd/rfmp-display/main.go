@@ -31,6 +31,8 @@ func main() {
 	}
 	defer led.Close()
 
+	initPlatform()
+
 	client := NewClient(*addr)
 	ws := NewWSClient(*addr)
 	ws.Connect()

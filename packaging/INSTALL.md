@@ -5,9 +5,10 @@ For systems without .deb/.rpm/.apk package support.
 ## Install
 
 ```sh
-# Copy binary
+# Copy binaries
 sudo cp rfmpd /usr/bin/rfmpd
-sudo chmod 755 /usr/bin/rfmpd
+sudo cp rfmp-display /usr/bin/rfmp-display
+sudo chmod 755 /usr/bin/rfmpd /usr/bin/rfmp-display
 
 # Create system user
 sudo useradd --system --home-dir /var/lib/rfmpd --shell /usr/sbin/nologin rfmpd
@@ -22,8 +23,14 @@ sudo cp direwolf/*.conf /etc/rfmpd/direwolf/
 sudo mkdir -p /var/lib/rfmpd /var/log/rfmpd
 sudo chown rfmpd:rfmpd /var/lib/rfmpd /var/log/rfmpd
 
+# Install helper scripts
+sudo mkdir -p /usr/share/rfmpd
+sudo cp enable-overlays.sh /usr/share/rfmpd/
+sudo chmod 755 /usr/share/rfmpd/enable-overlays.sh
+
 # Install systemd units (if using systemd)
 sudo cp systemd/rfmpd.service /lib/systemd/system/
+sudo cp systemd/rfmp-display.service /lib/systemd/system/
 sudo cp systemd/direwolf@.service /lib/systemd/system/
 sudo systemctl daemon-reload
 
@@ -31,11 +38,12 @@ sudo systemctl daemon-reload
 sudo cp udev/99-rfmp-radio.rules /usr/lib/udev/rules.d/
 sudo udevadm control --reload-rules
 
-# Enable and start
-sudo systemctl enable --now rfmpd
-
 # Enable SPI/I2C overlays for display hardware (reboot required)
 sudo /usr/share/rfmpd/enable-overlays.sh
+
+# Enable and start services
+sudo systemctl enable --now rfmpd
+sudo systemctl enable --now rfmp-display
 ```
 
 ### Display hardware setup
@@ -64,11 +72,16 @@ ls /dev/i2c-1       # keyboard
 ## Uninstall
 
 ```sh
+sudo systemctl disable --now rfmp-display
 sudo systemctl disable --now rfmpd
-sudo rm /usr/bin/rfmpd
+sudo systemctl stop 'direwolf@*' 2>/dev/null || true
+sudo rm /usr/bin/rfmpd /usr/bin/rfmp-display
 sudo rm -rf /etc/rfmpd
-sudo rm /lib/systemd/system/rfmpd.service /lib/systemd/system/direwolf@.service
+sudo rm /lib/systemd/system/rfmpd.service \
+        /lib/systemd/system/rfmp-display.service \
+        /lib/systemd/system/direwolf@.service
 sudo rm /usr/lib/udev/rules.d/99-rfmp-radio.rules
+sudo rm -rf /usr/share/rfmpd
 sudo userdel rfmpd
 sudo rm -rf /var/lib/rfmpd /var/log/rfmpd
 sudo systemctl daemon-reload

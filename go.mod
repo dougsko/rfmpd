@@ -1,4 +1,4 @@
-module github.com/dprostko/rfmp-go
+module github.com/dougsko/rfmpd
 
 go 1.24
 

@@ -13,6 +13,9 @@ ln -sf /etc/init.d/direwolf /etc/init.d/direwolf.digiriglite
 ln -sf /etc/init.d/direwolf /etc/init.d/direwolf.qmx
 
 rc-update add rfmpd default 2>/dev/null || true
+rc-update add rfmp-display default 2>/dev/null || true
+rc-service rfmpd start 2>/dev/null || true
+rc-service rfmp-display start 2>/dev/null || true
 
 # Enable SPI/I2C overlays for display hardware
 if [ -f /usr/share/rfmpd/enable-overlays.sh ]; then

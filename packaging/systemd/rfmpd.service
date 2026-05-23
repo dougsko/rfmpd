@@ -7,8 +7,8 @@ Type=simple
 User=rfmpd
 Group=rfmpd
 ExecStart=/usr/bin/rfmpd -c /etc/rfmpd/config.yaml
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=2
 
 [Install]
 WantedBy=multi-user.target

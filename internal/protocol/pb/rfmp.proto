@@ -1,6 +1,6 @@
 syntax = "proto3";
 package rfmp;
-option go_package = "github.com/dprostko/rfmp-go/internal/protocol/pb";
+option go_package = "github.com/dougsko/rfmpd/internal/protocol/pb";
 
 message Frame {
   oneof payload {

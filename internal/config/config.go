@@ -10,58 +10,58 @@ import (
 )
 
 type Config struct {
-	Node     NodeConfig     `yaml:"node"`
-	Network  NetworkConfig  `yaml:"network"`
-	Protocol ProtocolConfig `yaml:"protocol"`
-	Timing   TimingConfig   `yaml:"timing"`
-	Sync     SyncConfig     `yaml:"sync"`
-	Storage  StorageConfig  `yaml:"storage"`
-	API      APIConfig      `yaml:"api"`
-	Logging  LoggingConfig  `yaml:"logging"`
+	Node     NodeConfig     `yaml:"node" json:"node"`
+	Network  NetworkConfig  `yaml:"network" json:"network"`
+	Protocol ProtocolConfig `yaml:"protocol" json:"protocol"`
+	Timing   TimingConfig   `yaml:"timing" json:"timing"`
+	Sync     SyncConfig     `yaml:"sync" json:"sync"`
+	Storage  StorageConfig  `yaml:"storage" json:"storage"`
+	API      APIConfig      `yaml:"api" json:"api"`
+	Logging  LoggingConfig  `yaml:"logging" json:"logging"`
 
-	LoadedFrom string `yaml:"-"`
+	LoadedFrom string `yaml:"-" json:"-"`
 }
 
 type NodeConfig struct {
-	Callsign string `yaml:"callsign"`
-	SSID     int    `yaml:"ssid"`
+	Callsign string `yaml:"callsign" json:"callsign"`
+	SSID     int    `yaml:"ssid" json:"ssid"`
 }
 
 type NetworkConfig struct {
-	DirewolfHost      string `yaml:"direwolf_host"`
-	DirewolfPort      int    `yaml:"direwolf_port"`
-	ReconnectInterval int    `yaml:"reconnect_interval"`
-	OfflineMode       bool   `yaml:"offline_mode"`
+	DirewolfHost      string `yaml:"direwolf_host" json:"direwolf_host"`
+	DirewolfPort      int    `yaml:"direwolf_port" json:"direwolf_port"`
+	ReconnectInterval int    `yaml:"reconnect_interval" json:"reconnect_interval"`
+	OfflineMode       bool   `yaml:"offline_mode" json:"offline_mode"`
 }
 
 type ProtocolConfig struct {
-	FragmentThreshold int `yaml:"fragment_threshold"`
+	FragmentThreshold int `yaml:"fragment_threshold" json:"fragment_threshold"`
 }
 
 type TimingConfig struct {
-	BaseDelay float64 `yaml:"base_delay"`
-	Jitter    float64 `yaml:"jitter"`
+	BaseDelay float64 `yaml:"base_delay" json:"base_delay"`
+	Jitter    float64 `yaml:"jitter" json:"jitter"`
 }
 
 type SyncConfig struct {
-	SyncInterval int `yaml:"sync_interval"`
+	SyncInterval int `yaml:"sync_interval" json:"sync_interval"`
 }
 
 type StorageConfig struct {
-	DatabasePath string `yaml:"database_path"`
+	DatabasePath string `yaml:"database_path" json:"database_path"`
 }
 
 type APIConfig struct {
-	Host        string   `yaml:"host"`
-	Port        int      `yaml:"port"`
-	CORSOrigins []string `yaml:"cors_origins"`
+	Host        string   `yaml:"host" json:"host"`
+	Port        int      `yaml:"port" json:"port"`
+	CORSOrigins []string `yaml:"cors_origins" json:"cors_origins"`
 }
 
 type LoggingConfig struct {
-	Level       string `yaml:"level"`
-	File        string `yaml:"file"`
-	MaxSize     int    `yaml:"max_size"`
-	BackupCount int    `yaml:"backup_count"`
+	Level       string `yaml:"level" json:"level"`
+	File        string `yaml:"file" json:"file,omitempty"`
+	MaxSize     int    `yaml:"max_size" json:"max_size"`
+	BackupCount int    `yaml:"backup_count" json:"backup_count"`
 }
 
 func DefaultConfig() *Config {
@@ -93,7 +93,7 @@ func DefaultConfig() *Config {
 			Host: "0.0.0.0",
 			Port: 8080,
 			CORSOrigins: []string{
-				"http://localhost:8080",
+				"*",
 			},
 		},
 		Logging: LoggingConfig{
