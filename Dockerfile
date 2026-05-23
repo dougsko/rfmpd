@@ -13,23 +13,29 @@ ARG CONFLICTS=brltty
 # Stage: Build Go binaries for both architectures
 # ============================================================
 FROM golang:1.24-bookworm AS build-arm64
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/* && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG VERSION
-RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
+RUN protoc --go_out=. --go_opt=paths=source_relative internal/protocol/pb/rfmp.proto && \
+    GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
     go build -ldflags="-s -w -X main.version=${VERSION}" -o /out/rfmpd . && \
     GOOS=linux GOARCH=arm64 CGO_ENABLED=0 \
     go build -ldflags="-s -w" -o /out/rfmp-display ./cmd/rfmp-display
 
 FROM golang:1.24-bookworm AS build-amd64
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/* && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG VERSION
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+RUN protoc --go_out=. --go_opt=paths=source_relative internal/protocol/pb/rfmp.proto && \
+    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
     go build -ldflags="-s -w -X main.version=${VERSION}" -o /out/rfmpd . && \
     GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
     go build -ldflags="-s -w" -o /out/rfmp-display ./cmd/rfmp-display

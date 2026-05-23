@@ -1,5 +1,5 @@
 # Package metadata — single source of truth for all package formats
-VERSION     ?= 0.5.1
+VERSION     ?= 0.5.0
 NAME        := rfmpd
 SUMMARY     := RFMP daemon — resilient mesh messaging over AX.25 packet radio
 MAINTAINER  := Doug Prostko
@@ -14,7 +14,7 @@ DOCKER_ARGS := --build-arg VERSION=$(VERSION) \
 	--build-arg "MAINTAINER=$(MAINTAINER)" --build-arg LICENSE=$(LICENSE) \
 	--build-arg DEPENDS=$(DEPENDS) --build-arg CONFLICTS=$(CONFLICTS)
 
-.PHONY: dist deb rpm apk tarball sha256 build clean test cover
+.PHONY: dist deb rpm apk tarball sha256 generate build clean test cover
 
 dist: deb rpm apk tarball sha256
 
@@ -40,7 +40,10 @@ tarball:
 sha256:
 	cd $(DIST) && shasum -a 256 *.deb *.rpm *.apk *.tar.gz > SHA256SUMS
 
-build:
+generate:
+	protoc --go_out=. --go_opt=paths=source_relative internal/protocol/pb/rfmp.proto
+
+build: generate
 	go build -ldflags="-s -w -X main.version=$(VERSION)" -o $(NAME) .
 	go build -ldflags="-s -w" -o rfmp-display ./cmd/rfmp-display
 
